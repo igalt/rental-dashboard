@@ -206,7 +206,7 @@ import { vi } from 'vitest';
 
 export function createFakeQueryBuilder(result: { data: unknown; error: unknown }) {
   const builder: Record<string, unknown> = {};
-  const chainMethods = ['select', 'insert', 'update', 'upsert', 'delete', 'eq', 'neq', 'ilike', 'gte', 'lte', 'limit', 'single', 'or', 'order', 'is'];
+  const chainMethods = ['select', 'insert', 'update', 'upsert', 'delete', 'eq', 'neq', 'ilike', 'gte', 'lte', 'limit', 'single', 'maybeSingle', 'or', 'order', 'is'];
   for (const method of chainMethods) {
     builder[method] = vi.fn(() => builder);
   }
