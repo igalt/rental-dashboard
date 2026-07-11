@@ -53,9 +53,10 @@ Single `listings` table in Supabase, regardless of source:
 
 Two complementary mechanisms, both shared/collaborative (no per-user ownership, same as `notes`/`favorited` — either person edits the same live set):
 
-- **Structured rule builder** — operates on the already-structured fields (`price`, `rooms`, `area`, `move_in_date`). Rules are combinable (e.g. `price < 6000 AND rooms >= 3 AND area IN (X, Y)`), stored as a single shared active rule set (not multiple saved presets — one live shared filter, since only one filter view was requested). Table: `filter_rules` (`id`, `field`, `operator`, `value`, `group` for AND/OR grouping).
-- **Free-text tags** — for fuzzy, non-structured criteria that only show up in a listing's description (e.g. "pet friendly", "not ground floor", "quiet street"). Either user adds a tag via the dashboard; an LLM call checks each listing's `raw_text` against the tag and records a match/no-match/unclear result. Table: `tags` (`id`, `label`, `created_at`); join table `listing_tags` (`listing_id`, `tag_id`, `matched` boolean, `checked_at`).
-  - **Retroactive re-scan**: adding a new tag immediately re-checks it against every existing listing's `raw_text` (not just future ingests), so nothing already in the feed is missed. New listings are checked against all existing tags at ingest time.
+- **Structured rule builder** — operates on the already-structured fields (`price`, `rooms`, `area`, `move_in_date`). Rules are combinable (e.g. `price < 6000 AND rooms >= 3 AND area IN (X, Y)`), stored as a single shared active rule set (not multiple saved presets — one live shared filter, since only one filter view was requested). Table: `filter_rules` (`id`, `field`, `operator`, `value`, `rule_group` for AND/OR grouping — rules within the same `rule_group` are ANDed together, and groups themselves are ORed).
+- **Free-text tags** — for fuzzy, non-structured criteria that only show up in a listing's description (e.g. "pet friendly", "not ground floor", "quiet street"). Either user adds a tag via the dashboard; an LLM call checks each listing's `raw_text` against the tag and records a result. Table: `tags` (`id`, `label`, `created_at`); join table `listing_tags` (`listing_id`, `tag_id`, `match_status` — one of `matched` / `unmatched` / `unclear`, `checked_at`).
+  - **Retroactive re-scan**: adding a new tag immediately re-checks it against every existing listing's `raw_text` (not just future ingests), so nothing already in the feed is missed.
+  - **Where this runs**: tag-matching is a separate process from ingestion, owned entirely by the Next.js app (which already needs LLM access for the Ingest API) — not by the Yad2 GitHub Actions workflow, which stays LLM-free per its Architecture description above. A Supabase database webhook fires on every `listings` insert (regardless of source, including Yad2's direct upserts) and calls a `/api/tags/check` route in the app, which runs LLM matching for that listing against all existing tags. Adding a new tag calls the same route to sweep it against all existing listings. This keeps the Yad2 scraper simple and decoupled from LLM calls while still covering every listing, whatever ingested it.
 
 The dashboard combines both: structured rules narrow the feed first (fast, DB-level query), then tag-match state is shown per listing so either of you can see at a glance which of your fuzzy criteria a listing satisfies.
 
@@ -86,7 +87,7 @@ The dashboard combines both: structured rules narrow the feed first (fast, DB-le
 
 ## Phasing
 
-1. **MVP**: Next.js app on Vercel + Supabase schema + Yad2 GitHub Actions scraper + ingest API + dashboard (feed, filters, favorite/hide, notes, manual quick-add).
+1. **MVP**: Next.js app on Vercel + Supabase schema + Yad2 GitHub Actions scraper + ingest API + dashboard (feed, structured rule builder, free-text tag manager with LLM matching, favorite/hide, notes, manual quick-add).
 2. **Phase 2**: On-demand WhatsApp ingestion tool (computer-use flow + prompt for extracting listings from a named group).
 3. **Phase 3**: On-demand Facebook ingestion tool (browser automation flow for a named group).
 
