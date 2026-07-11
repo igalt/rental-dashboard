@@ -16,6 +16,7 @@ New standalone project (separate from the existing Beatfulness Playlist Helper r
 - **App**: Next.js, hosted on Vercel (free tier).
 - **Database**: Supabase Postgres (free tier). Single source of truth for all listings regardless of origin.
 - **Yad2 ingestion**: automated, scheduled scraper (Puppeteer + puppeteer-extra-plugin-stealth, same approach proven in the MiloNesting project) running as a **GitHub Actions scheduled workflow** (cron). Free minutes cover this easily at low frequency (e.g. hourly). Yad2's listing pages already expose structured fields (price, rooms, area, etc.) in the HTML, so this path does **not** use LLM extraction — the workflow parses those fields directly and **upserts straight into Supabase** using a service-role key, keyed on `source_ref` (Yad2's listing ID) for dedup. This path does not go through the Ingest API described below.
+  - **Delisting detection**: each run scrapes the full current result set for the saved search. Any previously-stored Yad2 row whose `source_ref` is *not* in this run's results is marked delisted (`delisted_at` set to now, if not already set) — the listing was likely taken down or rented out. This only applies to Yad2 rows; Facebook/WhatsApp/manual listings have no automated way to verify they're still available, so `delisted_at` stays null for those.
 - **WhatsApp ingestion**: **on-demand only**, never scheduled. Triggered by the user asking a Claude Code session to check WhatsApp groups. That session uses computer-use to open WhatsApp Desktop, read the group(s) the user names, extract listing-shaped messages via LLM parsing, and POST the resulting raw text to the app's Ingest API (below).
 - **Facebook ingestion**: **on-demand only**, never scheduled. Triggered the same way — a Claude Code session uses browser automation (the user's own logged-in session) to browse the specified Facebook group(s) once, extract new posts, and POST the raw text to the Ingest API.
 
@@ -40,9 +41,10 @@ Single `listings` table in Supabase, regardless of source:
 | `raw_text` | original scraped/pasted text, kept for re-parsing or manual review |
 | `extracted_at` | timestamp |
 | `favorited` | boolean — global, not per-user (no login, so state is shared like `notes`) |
-| `hidden` | boolean — global, same as `favorited` |
+| `irrelevant` | boolean — global, same as `favorited` |
 | `notes` | free-text, shared between both users |
 | `possible_duplicate_of` | nullable FK to another `listings.id` |
+| `delisted_at` | nullable timestamp — set by the Yad2 scraper when a previously-seen listing no longer appears in the latest scrape; always null for non-Yad2 sources |
 
 ### Deduplication
 
@@ -69,15 +71,15 @@ The dashboard combines both: structured rules narrow the feed first (fast, DB-le
 
 ## Dashboard UI
 
-- Unified feed of all listings, newest first.
+- Unified feed of all listings, newest first. Delisted listings (`delisted_at` set) are excluded from the default feed view but not deleted — a "show delisted too" toggle reveals them, each marked with a delisted badge.
 - Structured rule builder (area/city, price range, room count, move-in date, and combinable custom rules) — see Filter Criteria above.
 - Free-text tag manager — add/remove shared tags; each listing shows matched/unmatched/unclear per tag.
 - Source badge per listing (Yad2 / Facebook / WhatsApp / manual).
-- Favorite and hide actions per listing.
+- Favorite and "mark irrelevant" actions per listing.
 - Shared notes field per listing (visible/editable by both users).
-- "Possible duplicate — confirm?" prompt on listings flagged by cross-source dedup, letting the user merge or dismiss. Dismiss just clears the flag (both records stay). Merge keeps the more-recently-updated record's `favorited`/`notes`/`hidden` values and hides the other.
+- "Possible duplicate — confirm?" prompt on listings flagged by cross-source dedup, letting the user merge or dismiss. Dismiss just clears the flag (both records stay). Merge keeps the more-recently-updated record's `favorited`/`notes`/`irrelevant` values and marks the other record `irrelevant`.
 - Quick-add box for manual paste ingestion.
-- No multi-stage status pipeline (New → Contacted → etc.) in this version — favorite/hide/notes is enough for now. Explicitly deferred; the data model doesn't preclude adding a `status` field later.
+- No multi-stage status pipeline (New → Contacted → etc.) in this version — favorite/irrelevant/notes is enough for now. Explicitly deferred; the data model doesn't preclude adding a `status` field later.
 
 ## Out of Scope (this phase)
 
@@ -88,7 +90,7 @@ The dashboard combines both: structured rules narrow the feed first (fast, DB-le
 
 ## Phasing
 
-1. **MVP**: Next.js app on Vercel + Supabase schema + Yad2 GitHub Actions scraper + ingest API + dashboard (feed, structured rule builder, free-text tag manager with LLM matching, favorite/hide, notes, manual quick-add).
+1. **MVP**: Next.js app on Vercel + Supabase schema + Yad2 GitHub Actions scraper + ingest API + dashboard (feed, structured rule builder, free-text tag manager with LLM matching, favorite/mark-irrelevant, notes, manual quick-add, delisting detection).
 2. **Phase 2**: On-demand WhatsApp ingestion tool (computer-use flow + prompt for extracting listings from a named group).
 3. **Phase 3**: On-demand Facebook ingestion tool (browser automation flow for a named group).
 
