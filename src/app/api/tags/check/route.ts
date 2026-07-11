@@ -26,9 +26,17 @@ export async function POST(request: NextRequest) {
 
   // Supabase Database Webhooks send { type, table, record, schema, old_record }.
   // The new-tag sweep (triggered from our own tag-creation route) sends { tag_id }.
+  const table = (body as Record<string, unknown>).table;
+  const type = (body as Record<string, unknown>).type;
   const record = (body as Record<string, unknown>).record;
+  // Only treat `record.id` as a listing id when the payload is actually a
+  // listings-INSERT webhook — otherwise any payload shaped like { record: { id } }
+  // (e.g. an UPDATE, or a webhook on a different table) would be misread as one.
+  const isListingsInsertWebhook = table === 'listings' && type === 'INSERT';
   const recordId =
-    record && typeof record === 'object' ? (record as Record<string, unknown>).id : undefined;
+    isListingsInsertWebhook && record && typeof record === 'object'
+      ? (record as Record<string, unknown>).id
+      : undefined;
   const listingId: unknown = recordId ?? (body as Record<string, unknown>).listing_id;
   const tagId: unknown = (body as Record<string, unknown>).tag_id;
 
@@ -44,19 +52,33 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'listing not found' }, { status: 404 });
     }
 
-    const { data: tags, error: tagsError } = await supabase.from('tags').select('id, label');
+    // Capped as a safety valve against pathological growth; at this app's expected
+    // scale (a two-person household search) this won't realistically bind. A future
+    // resumable/paginated sweep would be needed if that assumption stops holding.
+    const { data: tags, error: tagsError } = await supabase.from('tags').select('id, label').limit(500);
     if (tagsError) return NextResponse.json({ error: tagsError.message }, { status: 500 });
 
-    for (const tag of (tags as { id: string; label: string }[]) ?? []) {
+    const tagsList = (tags as { id: string; label: string }[]) ?? [];
+    let failures = 0;
+    for (const tag of tagsList) {
       const matchStatus = await matchTag((listing as { raw_text: string }).raw_text ?? '', tag.label);
-      await supabase.from('listing_tags').upsert({
+      const { error: upsertError } = await supabase.from('listing_tags').upsert({
         listing_id: (listing as { id: string }).id,
         tag_id: tag.id,
         match_status: matchStatus,
         checked_at: new Date().toISOString(),
       });
+      if (upsertError) {
+        console.error('Failed to upsert listing_tags', {
+          listing_id: (listing as { id: string }).id,
+          tag_id: tag.id,
+          error: upsertError,
+        });
+        failures++;
+      }
     }
-    return NextResponse.json({ checked: tags?.length ?? 0 });
+    const status = tagsList.length > 0 && failures === tagsList.length ? 500 : 200;
+    return NextResponse.json({ checked: tagsList.length, failed: failures }, { status });
   }
 
   if (typeof tagId === 'string' && tagId.length > 0) {
@@ -69,19 +91,36 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'tag not found' }, { status: 404 });
     }
 
-    const { data: listings, error: listingsError } = await supabase.from('listings').select('id, raw_text');
+    // Capped as a safety valve against pathological growth; at this app's expected
+    // scale (a two-person household search) this won't realistically bind. A future
+    // resumable/paginated sweep would be needed if that assumption stops holding.
+    const { data: listings, error: listingsError } = await supabase
+      .from('listings')
+      .select('id, raw_text')
+      .limit(500);
     if (listingsError) return NextResponse.json({ error: listingsError.message }, { status: 500 });
 
-    for (const listing of (listings as { id: string; raw_text: string }[]) ?? []) {
+    const listingsList = (listings as { id: string; raw_text: string }[]) ?? [];
+    let failures = 0;
+    for (const listing of listingsList) {
       const matchStatus = await matchTag(listing.raw_text ?? '', (tag as { label: string }).label);
-      await supabase.from('listing_tags').upsert({
+      const { error: upsertError } = await supabase.from('listing_tags').upsert({
         listing_id: listing.id,
         tag_id: (tag as { id: string }).id,
         match_status: matchStatus,
         checked_at: new Date().toISOString(),
       });
+      if (upsertError) {
+        console.error('Failed to upsert listing_tags', {
+          listing_id: listing.id,
+          tag_id: (tag as { id: string }).id,
+          error: upsertError,
+        });
+        failures++;
+      }
     }
-    return NextResponse.json({ checked: listings?.length ?? 0 });
+    const status = listingsList.length > 0 && failures === listingsList.length ? 500 : 200;
+    return NextResponse.json({ checked: listingsList.length, failed: failures }, { status });
   }
 
   return NextResponse.json({ error: 'listing_id or tag_id required' }, { status: 400 });
