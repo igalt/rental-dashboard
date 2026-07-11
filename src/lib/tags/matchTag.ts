@@ -12,8 +12,9 @@ Listing text:
 ${rawText}`;
 
   const response = (await caller(prompt)).trim().toLowerCase();
-  // Check "unmatched" before "matched" — "unmatched" contains "matched" as a substring.
-  if (response.includes('unmatched')) return 'unmatched';
+  // Check "unmatched" (and "not matched") before "matched" — "unmatched" contains
+  // "matched" as a substring, and "not matched" doesn't contain "unmatched" at all.
+  if (response.includes('unmatched') || /\bnot\s+matched\b/.test(response)) return 'unmatched';
   if (response.includes('matched')) return 'matched';
   return 'unclear';
 }

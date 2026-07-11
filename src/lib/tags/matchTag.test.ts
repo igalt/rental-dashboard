@@ -16,4 +16,9 @@ describe('matchTag', () => {
     const result = await matchTag('raw text', 'pet friendly', async () => 'not sure honestly');
     expect(result).toBe('unclear');
   });
+
+  it('does not misclassify "not matched" as matched', async () => {
+    const result = await matchTag('raw text', 'pet friendly', async () => "I'd say it's not matched");
+    expect(result).toBe('unmatched');
+  });
 });
