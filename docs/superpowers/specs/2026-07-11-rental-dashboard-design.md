@@ -31,7 +31,7 @@ Single `listings` table in Supabase, regardless of source:
 |---|---|
 | `id` | primary key |
 | `source` | `yad2` \| `facebook` \| `whatsapp` \| `manual` |
-| `source_ref` | original URL or platform ID, used for exact-dedup within a source |
+| `source_ref` | original URL or platform ID, used for exact-dedup within a source; null for manual pastes with no original link |
 | `title` | |
 | `price` | |
 | `rooms` | |
@@ -47,7 +47,7 @@ Single `listings` table in Supabase, regardless of source:
 ### Deduplication
 
 - **Exact dedup**: within the same source, match on `source_ref` (e.g. re-scraping Yad2 won't create duplicate rows for the same listing ID).
-- **Cross-source dedup**: no automatic merging (address/price/room matching across sources is too fuzzy to trust blindly). Instead, a lightweight similarity check (matching area + price range + room count) flags candidates by setting `possible_duplicate_of`, and the dashboard surfaces these as a "possible duplicate — confirm?" prompt for the user to merge or dismiss manually. Exact thresholds (how close a price/room match needs to be, whether area matching is exact-string or fuzzy) are left to be tuned during implementation rather than fixed here.
+- **Cross-source dedup**: no automatic merging (address/price/room matching across sources is too fuzzy to trust blindly). Instead, a lightweight similarity check (matching area + price range + room count) flags candidates by setting `possible_duplicate_of`, and the dashboard surfaces these as a "possible duplicate — confirm?" prompt for the user to merge or dismiss manually. Exact thresholds (how close a price/room match needs to be, whether area matching is exact-string or fuzzy) are left to be tuned during implementation rather than fixed here. This check runs at insert time, as shared logic used by all three write paths (Yad2 upsert, Ingest API, manual quick-add) — not a separate batch job.
 
 ## Ingest API
 
@@ -62,6 +62,7 @@ Single `listings` table in Supabase, regardless of source:
 - Source badge per listing (Yad2 / Facebook / WhatsApp / manual).
 - Favorite and hide actions per listing.
 - Shared notes field per listing (visible/editable by both users).
+- "Possible duplicate — confirm?" prompt on listings flagged by cross-source dedup, letting the user merge or dismiss.
 - Quick-add box for manual paste ingestion.
 - No multi-stage status pipeline (New → Contacted → etc.) in this version — favorite/hide/notes is enough for now. Explicitly deferred; the data model doesn't preclude adding a `status` field later.
 
