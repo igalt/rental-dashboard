@@ -20,12 +20,37 @@ Text:
 ${rawText}`;
 
   const responseText = await caller(prompt);
-  const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) return EMPTY;
+  const jsonText = extractJsonObject(responseText);
+  if (jsonText === null) return EMPTY;
 
   try {
-    return { ...EMPTY, ...JSON.parse(jsonMatch[0]) };
+    return { ...EMPTY, ...JSON.parse(jsonText) };
   } catch {
     return EMPTY;
   }
+}
+
+/**
+ * Pulls the first JSON object out of a raw LLM response. Strips markdown
+ * code fences, then finds the first `{` and its true matching `}` by
+ * brace-depth counting so trailing prose containing its own braces
+ * (parentheticals, other code fences, etc.) can't extend the match past
+ * the real object.
+ */
+function extractJsonObject(text: string): string | null {
+  const stripped = text.replace(/```(?:json)?/gi, '');
+
+  const start = stripped.indexOf('{');
+  if (start === -1) return null;
+
+  let depth = 0;
+  for (let i = start; i < stripped.length; i++) {
+    if (stripped[i] === '{') depth++;
+    else if (stripped[i] === '}') {
+      depth--;
+      if (depth === 0) return stripped.slice(start, i + 1);
+    }
+  }
+
+  return null;
 }
