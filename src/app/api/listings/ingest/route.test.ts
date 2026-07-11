@@ -27,6 +27,14 @@ function makeRequest(body: unknown, authorized = true) {
   });
 }
 
+function makeRawRequest(rawBody: string, headers: Record<string, string> = { authorization: 'Bearer test-key' }) {
+  return new NextRequest('http://localhost/api/listings/ingest', {
+    method: 'POST',
+    headers,
+    body: rawBody,
+  });
+}
+
 describe('POST /api/listings/ingest', () => {
   it('rejects unauthorized requests', async () => {
     const response = await POST(makeRequest({ source: 'manual', raw_text: 'x' }, false));
@@ -47,5 +55,47 @@ describe('POST /api/listings/ingest', () => {
     expect(fake.builders.listings.insert).toHaveBeenCalledWith(
       expect.objectContaining({ source: 'whatsapp', title: 'Nice place', price: 5000 })
     );
+  });
+
+  it('rejects with 401 when INGEST_API_KEY is unset, even with literal "Bearer undefined"', async () => {
+    delete process.env.INGEST_API_KEY;
+
+    const response = await POST(
+      makeRawRequest(JSON.stringify({ source: 'manual', raw_text: 'x' }), {
+        authorization: 'Bearer undefined',
+      })
+    );
+
+    expect(response.status).toBe(401);
+  });
+
+  it('returns 400 for a malformed JSON body', async () => {
+    const response = await POST(makeRawRequest('{not valid json'));
+    expect(response.status).toBe(400);
+  });
+
+  it('returns 400 when source is not one of the allowed values', async () => {
+    const response = await POST(makeRequest({ source: 'instagram', raw_text: 'some text' }));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error).toMatch(/source/i);
+  });
+
+  it('returns 400 when raw_text is missing or empty', async () => {
+    const response = await POST(makeRequest({ source: 'manual', raw_text: '' }));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error).toMatch(/raw_text/i);
+  });
+
+  it('returns 400 when the batch array exceeds 50 items', async () => {
+    const payloads = Array.from({ length: 51 }, () => ({ source: 'manual', raw_text: 'x' }));
+    const response = await POST(makeRequest(payloads));
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error).toMatch(/50/);
   });
 });
