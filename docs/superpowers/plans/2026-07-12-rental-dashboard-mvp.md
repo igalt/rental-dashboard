@@ -41,10 +41,12 @@ These need real values before the corresponding tasks can be fully finished. Tas
 Run (from the project root, which already has a `.git` and `docs/` from the spec):
 
 ```bash
-npx create-next-app@latest . --typescript --tailwind --app --src-dir --import-alias "@/*" --eslint --no-turbopack
+npx create-next-app@latest . --typescript --tailwind --app --src-dir --import-alias "@/*" --eslint
 ```
 
 If prompted about the non-empty directory (it has `.git`/`docs/`), confirm to proceed.
+
+**Note (added after Task 1 was implemented):** this version of `create-next-app` no longer has a `--no-turbopack` flag — Turbopack is the default bundler for both dev and build regardless. Nothing in this plan requires Webpack specifically, so the default is fine; the flag has been removed from the command above to avoid confusion.
 
 - [ ] **Step 2: Check installed Next.js version's docs for breaking changes**
 
