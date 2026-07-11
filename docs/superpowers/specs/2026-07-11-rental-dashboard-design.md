@@ -49,6 +49,16 @@ Single `listings` table in Supabase, regardless of source:
 - **Exact dedup**: within the same source, match on `source_ref` (e.g. re-scraping Yad2 won't create duplicate rows for the same listing ID).
 - **Cross-source dedup**: no automatic merging (address/price/room matching across sources is too fuzzy to trust blindly). Instead, a lightweight similarity check (matching area + price range + room count) flags candidates by setting `possible_duplicate_of`, and the dashboard surfaces these as a "possible duplicate — confirm?" prompt for the user to merge or dismiss manually. Exact thresholds (how close a price/room match needs to be, whether area matching is exact-string or fuzzy) are left to be tuned during implementation rather than fixed here. This check runs at insert time, as shared logic used by all three write paths (Yad2 upsert, Ingest API, manual quick-add) — not a separate batch job.
 
+### Filter Criteria
+
+Two complementary mechanisms, both shared/collaborative (no per-user ownership, same as `notes`/`favorited` — either person edits the same live set):
+
+- **Structured rule builder** — operates on the already-structured fields (`price`, `rooms`, `area`, `move_in_date`). Rules are combinable (e.g. `price < 6000 AND rooms >= 3 AND area IN (X, Y)`), stored as a single shared active rule set (not multiple saved presets — one live shared filter, since only one filter view was requested). Table: `filter_rules` (`id`, `field`, `operator`, `value`, `group` for AND/OR grouping).
+- **Free-text tags** — for fuzzy, non-structured criteria that only show up in a listing's description (e.g. "pet friendly", "not ground floor", "quiet street"). Either user adds a tag via the dashboard; an LLM call checks each listing's `raw_text` against the tag and records a match/no-match/unclear result. Table: `tags` (`id`, `label`, `created_at`); join table `listing_tags` (`listing_id`, `tag_id`, `matched` boolean, `checked_at`).
+  - **Retroactive re-scan**: adding a new tag immediately re-checks it against every existing listing's `raw_text` (not just future ingests), so nothing already in the feed is missed. New listings are checked against all existing tags at ingest time.
+
+The dashboard combines both: structured rules narrow the feed first (fast, DB-level query), then tag-match state is shown per listing so either of you can see at a glance which of your fuzzy criteria a listing satisfies.
+
 ## Ingest API
 
 `POST /api/listings/ingest` — the entry point for **unstructured, text-based** sources only (WhatsApp and Facebook on-demand tools; the manual quick-add box uses the same extraction logic in-process rather than calling this route). Accepts one or more raw-text payloads plus a source tag, runs them through LLM extraction to pull out structured fields, then dedups and inserts.
@@ -58,7 +68,8 @@ Single `listings` table in Supabase, regardless of source:
 ## Dashboard UI
 
 - Unified feed of all listings, newest first.
-- Filters: area/city, price range, room count, move-in date.
+- Structured rule builder (area/city, price range, room count, move-in date, and combinable custom rules) — see Filter Criteria above.
+- Free-text tag manager — add/remove shared tags; each listing shows matched/unmatched/unclear per tag.
 - Source badge per listing (Yad2 / Facebook / WhatsApp / manual).
 - Favorite and hide actions per listing.
 - Shared notes field per listing (visible/editable by both users).
