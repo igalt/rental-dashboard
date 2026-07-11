@@ -18,12 +18,12 @@ These need real values before the corresponding tasks can be fully finished. Tas
 
 | Needed | Used by | Status |
 |---|---|---|
-| Supabase project URL + anon key + service-role key | Tasks 2, 23 (deploy) | Not yet provided — user must create the project |
-| Yad2 search URL (filters already applied on yad2.co.il) | Task 21 (scraper) | Not yet provided |
-| Real Yad2 listing-card DOM structure | Task 21 (scraper selectors) | Requires live inspection of the actual search URL once available — the selectors in this plan are placeholders and **will** need correction |
-| `ANTHROPIC_API_KEY` | Tasks 5, 7, 23 | Standard Anthropic API key, user provides |
-| GitHub repo for this project (public/private?) | Task 23 | User decision needed |
-| Vercel account linked to the repo | Task 23 | User must do the OAuth linking themselves |
+| Supabase project URL + anon key + service-role key | Tasks 2, 20 (deploy) | Not yet provided — user must create the project |
+| Yad2 search URL (filters already applied on yad2.co.il) | Task 18 (scraper) | Not yet provided |
+| Real Yad2 listing-card DOM structure | Task 18 (scraper selectors) | Requires live inspection of the actual search URL once available — the selectors in this plan are placeholders and **will** need correction |
+| `ANTHROPIC_API_KEY` | Tasks 5, 7, 20 | Standard Anthropic API key, user provides |
+| GitHub repo for this project (public/private?) | Task 20 | User decision needed |
+| Vercel account linked to the repo | Task 20 | User must do the OAuth linking themselves |
 
 **Important — this is a fresh Next.js scaffold.** The sibling project in this workspace (`Beatfulness Playlist Helper`) is pinned to `next@16.2.3` and its `AGENTS.md` warns that this major version has breaking changes from training-data assumptions and that `node_modules/next/dist/docs/` should be checked before writing routes/config. Task 1 includes a step to do the same check here, since `create-next-app` will likely pull the same major version.
 
@@ -78,7 +78,7 @@ ANTHROPIC_API_KEY=
 INGEST_API_KEY=
 ```
 
-(`YAD2_SEARCH_URL` is not listed here — it's only used by the GitHub Actions workflow, not the app itself, and is stored as a repo secret in Task 22.)
+(`YAD2_SEARCH_URL` is not listed here — it's only used by the GitHub Actions workflow, not the app itself, and is stored as a repo secret in Task 20.)
 
 - [ ] **Step 6: Verify `.gitignore` excludes env files**
 
@@ -204,7 +204,7 @@ import { vi } from 'vitest';
 
 export function createFakeQueryBuilder(result: { data: unknown; error: unknown }) {
   const builder: Record<string, unknown> = {};
-  const chainMethods = ['select', 'insert', 'update', 'upsert', 'eq', 'neq', 'ilike', 'gte', 'lte', 'limit', 'single'];
+  const chainMethods = ['select', 'insert', 'update', 'upsert', 'delete', 'eq', 'neq', 'ilike', 'gte', 'lte', 'limit', 'single', 'or', 'order', 'is'];
   for (const method of chainMethods) {
     builder[method] = vi.fn(() => builder);
   }
@@ -1107,7 +1107,7 @@ export async function DELETE(request: NextRequest) {
 }
 ```
 
-Note: the `testUtils` fake builder needs a `delete` chain method for this route — add `'delete'` to the `chainMethods` array in `src/lib/supabase/testUtils.ts` (Task 2) before running this test.
+Note: `delete` is already in the `chainMethods` list from Task 2.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1305,7 +1305,7 @@ Expected: FAIL — `route.ts` doesn't exist yet.
 
 - [ ] **Step 3: Write the implementation**
 
-Note: the `testUtils` fake builder needs an `or` chain method too — add `'or'` and `'order'` to `chainMethods` in `src/lib/supabase/testUtils.ts` before running this test.
+Note: `or` and `order` are already in the `chainMethods` list from Task 2.
 
 ```ts
 import { NextRequest, NextResponse } from 'next/server';
@@ -1337,7 +1337,7 @@ export async function GET(request: NextRequest) {
 }
 ```
 
-Note: the test above asserts `eq('irrelevant', false)` is called for the default case — `is('delisted_at', null)` is also called but not asserted in the sample test; add `'is'` to `chainMethods` in the test util as well.
+Note: the test above asserts `eq('irrelevant', false)` is called for the default case — `is('delisted_at', null)` is also called but not asserted in the sample test. `is` is already in the `chainMethods` list from Task 2.
 
 - [ ] **Step 4: Run test to verify it passes**
 
@@ -1446,13 +1446,14 @@ git commit -m "Add listing update API for favorite/irrelevant/notes"
 
 - [ ] **Step 1: Write the failing test**
 
+The shared `createFakeSupabase` test util (Task 2) returns one fixed result per table regardless of which `id` was queried — it can't represent "fetch record A, then fetch record B, get different data for each," which this route needs (it compares two listings' `updated_at`). This test uses a small dedicated fake instead.
+
 ```ts
 import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../../../../../lib/supabase/server', () => ({ getServiceClient: vi.fn() }));
 
 import { getServiceClient } from '../../../../../lib/supabase/server';
-import { createFakeSupabase } from '../../../../../lib/supabase/testUtils';
 import { POST } from './route';
 import { NextRequest } from 'next/server';
 
@@ -1463,30 +1464,66 @@ function makeRequest(action: string) {
   });
 }
 
+// Tracks which id was last queried and returns matching canned data for that id;
+// records every update() call so tests can assert on which id got which patch.
+function makeListingsFake(recordsById: Record<string, unknown>) {
+  const updateCalls: { id: string; patch: Record<string, unknown> }[] = [];
+  let queriedId: string | undefined;
+
+  const builder: any = {
+    select: vi.fn(() => builder),
+    eq: vi.fn((col: string, val: string) => {
+      if (col === 'id') queriedId = val;
+      return builder;
+    }),
+    update: vi.fn((patch: Record<string, unknown>) => {
+      updateCalls.push({ id: queriedId!, patch });
+      return builder;
+    }),
+    single: vi.fn(() => Promise.resolve({ data: recordsById[queriedId!], error: null })),
+    then: (resolve: (r: { data: unknown; error: null }) => unknown) =>
+      resolve({ data: recordsById[queriedId!], error: null }),
+  };
+
+  return { from: vi.fn(() => builder), updateCalls };
+}
+
 describe('POST /api/listings/[id]/duplicate', () => {
   it('dismiss clears the possible_duplicate_of flag', async () => {
-    const fake = createFakeSupabase({ listings: { data: { id: 'l1' }, error: null } });
+    const fake = makeListingsFake({ l1: { id: 'l1' } });
     vi.mocked(getServiceClient).mockReturnValue(fake as any);
 
     const response = await POST(makeRequest('dismiss'), { params: Promise.resolve({ id: 'l1' }) });
     expect(response.status).toBe(200);
-    expect(fake.builders.listings.update).toHaveBeenCalledWith({ possible_duplicate_of: null });
+    expect(fake.updateCalls[0]).toEqual({ id: 'l1', patch: { possible_duplicate_of: null } });
   });
 
-  it('merge keeps this record and marks the duplicate irrelevant', async () => {
-    const fake = createFakeSupabase({
-      listings: {
-        data: { id: 'l1', possible_duplicate_of: 'l2', favorited: true, notes: 'my note', irrelevant: false },
-        error: null,
-      },
+  it('merge marks the OLDER record irrelevant even when the newer one was clicked', async () => {
+    const fake = makeListingsFake({
+      l1: { id: 'l1', possible_duplicate_of: 'l2', updated_at: '2026-07-10T00:00:00Z' }, // requested, newer
+      l2: { id: 'l2', updated_at: '2026-07-01T00:00:00Z' }, // older
     });
     vi.mocked(getServiceClient).mockReturnValue(fake as any);
 
     const response = await POST(makeRequest('merge'), { params: Promise.resolve({ id: 'l1' }) });
     expect(response.status).toBe(200);
-    expect(fake.builders.listings.update).toHaveBeenCalledWith(
-      expect.objectContaining({ irrelevant: true })
-    );
+
+    const irrelevantUpdate = fake.updateCalls.find((c) => c.patch.irrelevant === true);
+    expect(irrelevantUpdate?.id).toBe('l2');
+  });
+
+  it('merge marks the requested record irrelevant when IT is the older one', async () => {
+    const fake = makeListingsFake({
+      l1: { id: 'l1', possible_duplicate_of: 'l2', updated_at: '2026-07-01T00:00:00Z' }, // requested, older
+      l2: { id: 'l2', updated_at: '2026-07-10T00:00:00Z' }, // newer
+    });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    const response = await POST(makeRequest('merge'), { params: Promise.resolve({ id: 'l1' }) });
+    expect(response.status).toBe(200);
+
+    const irrelevantUpdate = fake.updateCalls.find((c) => c.patch.irrelevant === true);
+    expect(irrelevantUpdate?.id).toBe('l1');
   });
 });
 ```
@@ -1506,6 +1543,12 @@ interface RouteContext {
   params: Promise<{ id: string }>;
 }
 
+interface ListingRecord {
+  id: string;
+  possible_duplicate_of?: string | null;
+  updated_at: string;
+}
+
 export async function POST(request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
   const { action } = await request.json();
@@ -1523,33 +1566,47 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
   }
 
   if (action === 'merge') {
-    const { data: listing, error: fetchError } = await supabase
+    const { data: current, error: currentError } = await supabase
       .from('listings')
-      .select('id, possible_duplicate_of, favorited, notes, irrelevant')
+      .select('id, possible_duplicate_of, updated_at')
       .eq('id', id)
       .single();
-    if (fetchError || !listing) {
+    if (currentError || !current) {
       return NextResponse.json({ error: 'listing not found' }, { status: 404 });
     }
 
-    const record = listing as {
-      id: string; possible_duplicate_of: string | null; favorited: boolean; notes: string | null; irrelevant: boolean;
-    };
-    if (!record.possible_duplicate_of) {
+    const currentRecord = current as ListingRecord;
+    if (!currentRecord.possible_duplicate_of) {
       return NextResponse.json({ error: 'no duplicate to merge' }, { status: 400 });
     }
 
-    // Keep this (more-recently-updated, per spec) record's favorited/notes/irrelevant,
-    // clear its own flag, and mark the other record irrelevant.
+    const { data: other, error: otherError } = await supabase
+      .from('listings')
+      .select('id, updated_at')
+      .eq('id', currentRecord.possible_duplicate_of)
+      .single();
+    if (otherError || !other) {
+      return NextResponse.json({ error: 'duplicate listing not found' }, { status: 404 });
+    }
+
+    const otherRecord = other as ListingRecord;
+    // Per spec: keep whichever record was more recently updated, mark the other irrelevant.
+    // Neither record's favorited/notes/irrelevant needs copying — the survivor already
+    // has its own values; we only need to correctly identify which one loses.
+    const currentIsNewer = new Date(currentRecord.updated_at) >= new Date(otherRecord.updated_at);
+    const loserId = currentIsNewer ? otherRecord.id : currentRecord.id;
+
+    // The duplicate-flag pointer always lives on the requested record; clear it either way.
     await supabase.from('listings').update({ possible_duplicate_of: null }).eq('id', id);
+
     const { data, error } = await supabase
       .from('listings')
       .update({ irrelevant: true })
-      .eq('id', record.possible_duplicate_of)
+      .eq('id', loserId)
       .select()
       .single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ mergedInto: id, hidden: data });
+    return NextResponse.json({ hidden: data });
   }
 
   return NextResponse.json({ error: 'action must be "merge" or "dismiss"' }, { status: 400 });
@@ -1559,7 +1616,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npx vitest run "src/app/api/listings/[id]/duplicate/route.test.ts"`
-Expected: PASS (2 tests)
+Expected: PASS (3 tests)
 
 - [ ] **Step 5: Commit**
 
@@ -1805,6 +1862,8 @@ export function ListingFeed() {
 
 - [ ] **Step 4: `FilterRuleBuilder` component**
 
+**Known functional gap in this baseline:** `buildFilterString` (Task 8) supports OR-ing across different `rule_group`s, but the component below always submits `rule_group: 0` for every rule — there's no UI control to start a second group. As shipped, every rule ends up ANDed together in one group; the OR-across-groups half of the data model is unreachable from the UI. Either add a "new group" control during the `frontend-design` pass in Step 1, or explicitly treat OR-groups as a fast-follow rather than part of this MVP pass — don't let it slip through unnoticed.
+
 Create `src/components/FilterRuleBuilder.tsx`:
 
 ```tsx
@@ -1990,7 +2049,7 @@ export default function Home() {
 
 - [ ] **Step 8: Manual smoke check**
 
-Run: `npm run dev`, open `http://localhost:3000`. Confirm the page renders without console errors (data will be empty until Supabase is connected in Task 23 — that's expected at this point).
+Run: `npm run dev`, open `http://localhost:3000`. Confirm the page renders without console errors (data will be empty until Supabase is connected in Task 20 — that's expected at this point).
 
 - [ ] **Step 9: Commit**
 
@@ -2020,6 +2079,7 @@ Create `scripts/scrape-yad2.ts`:
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import { createClient } from '@supabase/supabase-js';
+import { findPossibleDuplicate } from '../src/lib/dedup/findPossibleDuplicate';
 
 puppeteer.use(StealthPlugin());
 
@@ -2074,6 +2134,22 @@ async function main() {
   console.log(`Scraped ${scraped.length} listings from Yad2`);
 
   for (const listing of scraped) {
+    // Look up whether this exact Yad2 listing already exists, so the dedup check below
+    // excludes it from matching against itself (it will always have the same price/rooms/area).
+    const { data: existing } = await supabase
+      .from('listings')
+      .select('id')
+      .eq('source', 'yad2')
+      .eq('source_ref', listing.source_ref)
+      .maybeSingle();
+    const existingId = (existing as { id: string } | null)?.id;
+
+    const duplicateId = await findPossibleDuplicate(
+      supabase,
+      { price: listing.price, rooms: listing.rooms, area: listing.area },
+      existingId
+    );
+
     await supabase.from('listings').upsert(
       {
         source: 'yad2',
@@ -2083,6 +2159,7 @@ async function main() {
         rooms: listing.rooms,
         area: listing.area,
         delisted_at: null,
+        possible_duplicate_of: duplicateId,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'source,source_ref' }
