@@ -1,5 +1,12 @@
 import type { FilterRule } from '../../types/listing';
 
+function quoteIfNeeded(value: string): string {
+  if (/[,."():\s]/.test(value)) {
+    return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+  }
+  return value;
+}
+
 export function buildFilterString(rules: FilterRule[]): string | null {
   if (rules.length === 0) return null;
 
@@ -13,10 +20,10 @@ export function buildFilterString(rules: FilterRule[]): string | null {
   const groupStrings = Array.from(groups.values()).map((groupRules) => {
     const conditions = groupRules.map((r) => {
       if (r.operator === 'in') {
-        const values = r.value.split(',').map((v) => v.trim()).join(',');
+        const values = r.value.split(',').map((v) => v.trim()).filter(Boolean).join(',');
         return `${r.field}.in.(${values})`;
       }
-      return `${r.field}.${r.operator}.${r.value}`;
+      return `${r.field}.${r.operator}.${quoteIfNeeded(r.value)}`;
     });
     return conditions.length === 1 ? conditions[0] : `and(${conditions.join(',')})`;
   });
