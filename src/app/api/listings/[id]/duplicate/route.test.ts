@@ -15,9 +15,14 @@ function makeRequest(action: string) {
 
 // Tracks which id was last queried and returns matching canned data for that id;
 // records every update() call so tests can assert on which id got which patch.
+// A real Supabase chain doesn't execute anything until the whole chain resolves
+// (.single()/.then()), so the pending patch is recorded there rather than at
+// update()-call time — otherwise a chain like .update(x).eq('id', y) would
+// record the PREVIOUS query's id instead of y, since eq() runs after update().
 function makeListingsFake(recordsById: Record<string, unknown>) {
   const updateCalls: { id: string; patch: Record<string, unknown> }[] = [];
   let queriedId: string | undefined;
+  let pendingPatch: Record<string, unknown> | undefined;
 
   const builder: any = {
     select: vi.fn(() => builder),
@@ -26,12 +31,23 @@ function makeListingsFake(recordsById: Record<string, unknown>) {
       return builder;
     }),
     update: vi.fn((patch: Record<string, unknown>) => {
-      updateCalls.push({ id: queriedId!, patch });
+      pendingPatch = patch;
       return builder;
     }),
-    single: vi.fn(() => Promise.resolve({ data: recordsById[queriedId!], error: null })),
-    then: (resolve: (r: { data: unknown; error: null }) => unknown) =>
-      resolve({ data: recordsById[queriedId!], error: null }),
+    single: vi.fn(() => {
+      if (pendingPatch) {
+        updateCalls.push({ id: queriedId!, patch: pendingPatch });
+        pendingPatch = undefined;
+      }
+      return Promise.resolve({ data: recordsById[queriedId!], error: null });
+    }),
+    then: (resolve: (r: { data: unknown; error: null }) => unknown) => {
+      if (pendingPatch) {
+        updateCalls.push({ id: queriedId!, patch: pendingPatch });
+        pendingPatch = undefined;
+      }
+      return resolve({ data: recordsById[queriedId!], error: null });
+    },
   };
 
   return { from: vi.fn(() => builder), updateCalls };
@@ -59,6 +75,9 @@ describe('POST /api/listings/[id]/duplicate', () => {
 
     const irrelevantUpdate = fake.updateCalls.find((c) => c.patch.irrelevant === true);
     expect(irrelevantUpdate?.id).toBe('l2');
+
+    const clearPointerUpdate = fake.updateCalls.find((c) => 'possible_duplicate_of' in c.patch);
+    expect(clearPointerUpdate?.id).toBe('l1');
   });
 
   it('merge marks the requested record irrelevant when IT is the older one', async () => {
