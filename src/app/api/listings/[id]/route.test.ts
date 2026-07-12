@@ -26,4 +26,50 @@ describe('PATCH /api/listings/[id]', () => {
     );
     expect(fake.builders.listings.eq).toHaveBeenCalledWith('id', 'l1');
   });
+
+  it('rejects a non-object JSON body', async () => {
+    const fake = createFakeSupabase({ listings: { data: null, error: null } });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    const request = new NextRequest('http://localhost/api/listings/l1', {
+      method: 'PATCH',
+      body: JSON.stringify('hello'),
+    });
+    const response = await PATCH(request, { params: Promise.resolve({ id: 'l1' }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBeTruthy();
+  });
+
+  it('rejects an empty body with no recognized fields and skips the DB write', async () => {
+    const fake = createFakeSupabase({ listings: { data: null, error: null } });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    const request = new NextRequest('http://localhost/api/listings/l1', {
+      method: 'PATCH',
+      body: JSON.stringify({}),
+    });
+    const response = await PATCH(request, { params: Promise.resolve({ id: 'l1' }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBeTruthy();
+    expect(fake.from).not.toHaveBeenCalled();
+  });
+
+  it('rejects a wrong-typed favorited field', async () => {
+    const fake = createFakeSupabase({ listings: { data: null, error: null } });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    const request = new NextRequest('http://localhost/api/listings/l1', {
+      method: 'PATCH',
+      body: JSON.stringify({ favorited: 'yes' }),
+    });
+    const response = await PATCH(request, { params: Promise.resolve({ id: 'l1' }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBeTruthy();
+  });
 });
