@@ -4,7 +4,15 @@ import { getServiceClient } from '../../lib/supabase/server';
 import { extractListing } from '../../lib/extraction/extractListing';
 import { findPossibleDuplicate } from '../../lib/dedup/findPossibleDuplicate';
 
-export async function quickAddListing(rawText: string) {
+type QuickAddResult =
+  | { ok: true; listing: unknown }
+  | { ok: false; error: string };
+
+export async function quickAddListing(rawText: string): Promise<QuickAddResult> {
+  if (typeof rawText !== 'string' || rawText.trim().length === 0) {
+    return { ok: false, error: 'raw_text must be a non-empty string' };
+  }
+
   const supabase = getServiceClient();
   const extracted = await extractListing(rawText);
   const duplicateId = await findPossibleDuplicate(supabase, {
@@ -28,6 +36,10 @@ export async function quickAddListing(rawText: string) {
     .select()
     .single();
 
-  if (error) throw new Error(error.message);
-  return { listing: data };
+  if (error) {
+    console.error('Failed to insert quick-add listing:', error);
+    return { ok: false, error: 'failed to save listing' };
+  }
+
+  return { ok: true, listing: data };
 }
