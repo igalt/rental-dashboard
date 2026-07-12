@@ -39,4 +39,16 @@ describe('/api/filter-rules', () => {
     expect(response.status).toBe(200);
     expect(fake.builders.filter_rules.eq).toHaveBeenCalledWith('id', 'r1');
   });
+
+  it('POST rejects a value containing parentheses (PostgREST filter injection)', async () => {
+    const fake = createFakeSupabase({ filter_rules: { data: { id: 'r3' }, error: null } });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    const request = new NextRequest('http://localhost/api/filter-rules', {
+      method: 'POST',
+      body: JSON.stringify({ field: 'price', operator: 'in', value: '1),or(rooms.gt.0', rule_group: 0 }),
+    });
+    const response = await POST(request);
+    expect(response.status).toBe(400);
+  });
 });

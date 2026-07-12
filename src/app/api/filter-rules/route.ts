@@ -40,6 +40,14 @@ export async function POST(request: NextRequest) {
   if (typeof value !== 'string' || value.length === 0) {
     return NextResponse.json({ error: 'value must be a non-empty string' }, { status: 400 });
   }
+  // buildFilterString (Task 8) interpolates `value` raw into a PostgREST filter
+  // string (e.g. `${field}.in.(${value})`). Parentheses let a value break out of
+  // its intended grouping and splice extra clauses into the filter sent to
+  // Supabase, so this route — the only gate before rows land in the table — must
+  // reject them here.
+  if (/[()]/.test(value)) {
+    return NextResponse.json({ error: 'value must not contain parentheses' }, { status: 400 });
+  }
   if (rule_group !== undefined && typeof rule_group !== 'number') {
     return NextResponse.json({ error: 'rule_group must be a number' }, { status: 400 });
   }
