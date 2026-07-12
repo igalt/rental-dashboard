@@ -24,6 +24,7 @@ describe('GET /api/listings', () => {
 
     expect(body.listings).toEqual([{ id: 'l1' }]);
     expect(fake.builders.listings.eq).toHaveBeenCalledWith('irrelevant', false);
+    expect(fake.builders.listings.is).toHaveBeenCalledWith('delisted_at', null);
     expect(fake.builders.listings.or).toHaveBeenCalledWith('or(price.lt.6000)');
   });
 
