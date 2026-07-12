@@ -54,4 +54,32 @@ describe('quickAddListing', () => {
 
     consoleSpy.mockRestore();
   });
+
+  it('returns a generic error instead of throwing when extraction fails', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const fake = createFakeSupabase({ listings: { data: { id: 'new-id' }, error: null } });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+    vi.mocked(extractListing).mockRejectedValue(new Error('LLM API request failed'));
+
+    const result = await quickAddListing('some pasted facebook post text');
+
+    expect(result).toEqual({ ok: false, error: 'failed to add listing' });
+    expect(consoleSpy).toHaveBeenCalledWith('Quick-add failed:', expect.any(Error));
+
+    consoleSpy.mockRestore();
+  });
+
+  it('returns a generic error instead of throwing when dedup lookup fails', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const fake = createFakeSupabase({ listings: { data: { id: 'new-id' }, error: null } });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+    vi.mocked(findPossibleDuplicate).mockRejectedValue(new Error('db error'));
+
+    const result = await quickAddListing('some pasted facebook post text');
+
+    expect(result).toEqual({ ok: false, error: 'failed to add listing' });
+    expect(consoleSpy).toHaveBeenCalledWith('Quick-add failed:', expect.any(Error));
+
+    consoleSpy.mockRestore();
+  });
 });

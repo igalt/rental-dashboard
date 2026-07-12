@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Listing } from '../types/listing';
 
 interface Props {
@@ -11,6 +11,10 @@ interface Props {
 
 export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
   const [notes, setNotes] = useState(listing.notes ?? '');
+
+  useEffect(() => {
+    setNotes(listing.notes ?? '');
+  }, [listing.notes]);
 
   return (
     <div className="border rounded-lg p-4 space-y-3 bg-white dark:bg-neutral-900 shadow-sm">
