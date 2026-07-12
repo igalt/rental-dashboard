@@ -29,10 +29,18 @@ export async function POST(request: NextRequest) {
   if (typeof label !== 'string' || label.trim().length === 0) {
     return NextResponse.json({ error: 'label must be a non-empty string' }, { status: 400 });
   }
+  const trimmedLabel = label.trim();
 
   const supabase = getServiceClient();
-  const { data, error } = await supabase.from('tags').insert({ label }).select().single();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const { data, error } = await supabase.from('tags').insert({ label: trimmedLabel }).select().single();
+  if (error) {
+    // Postgres unique_violation on tags.label — surface a clean, client-actionable
+    // 409 instead of leaking the raw constraint name (e.g. "tags_label_key") at 500.
+    if ((error as { code?: string }).code === '23505') {
+      return NextResponse.json({ error: 'a tag with this label already exists' }, { status: 409 });
+    }
+    return NextResponse.json({ error: (error as { message: string }).message }, { status: 500 });
+  }
 
   const tag = data as { id: string };
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? request.nextUrl.origin;

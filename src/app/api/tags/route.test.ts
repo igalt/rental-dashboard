@@ -44,4 +44,35 @@ describe('/api/tags', () => {
     const response = await DELETE(request);
     expect(response.status).toBe(200);
   });
+
+  it('POST trims whitespace before inserting the label', async () => {
+    const fake = createFakeSupabase({ tags: { data: { id: 't3', label: 'pet friendly' }, error: null } });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    const request = new NextRequest('http://localhost/api/tags', {
+      method: 'POST',
+      body: JSON.stringify({ label: '  pet friendly  ' }),
+    });
+    await POST(request);
+
+    expect(fake.builders.tags.insert).toHaveBeenCalledWith({ label: 'pet friendly' });
+  });
+
+  it('POST returns a clean 409 on a duplicate label instead of the raw Postgres error', async () => {
+    const fake = createFakeSupabase({
+      tags: { data: null, error: { code: '23505', message: 'duplicate key value violates unique constraint "tags_label_key"' } },
+    });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    const request = new NextRequest('http://localhost/api/tags', {
+      method: 'POST',
+      body: JSON.stringify({ label: 'pet friendly' }),
+    });
+    const response = await POST(request);
+    const body = await response.json();
+
+    expect(response.status).toBe(409);
+    expect(body.error).toBe('a tag with this label already exists');
+    expect(body.error).not.toMatch(/tags_label_key/);
+  });
 });
