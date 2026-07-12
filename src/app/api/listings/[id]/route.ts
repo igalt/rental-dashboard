@@ -7,16 +7,23 @@ interface RouteContext {
 
 export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const { id } = await params;
-  const body = await request.json();
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'invalid JSON body' }, { status: 400 });
+  }
 
   if (typeof body !== 'object' || body === null || Array.isArray(body)) {
     return NextResponse.json({ error: 'invalid request body' }, { status: 400 });
   }
+  const bodyRecord = body as Record<string, unknown>;
 
   const allowedFields = ['favorited', 'irrelevant', 'notes'] as const;
   const update: Record<string, unknown> = {};
   for (const field of allowedFields) {
-    if (field in body) update[field] = body[field];
+    if (field in bodyRecord) update[field] = bodyRecord[field];
   }
 
   if ('favorited' in update && typeof update.favorited !== 'boolean') {

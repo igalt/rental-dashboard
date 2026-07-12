@@ -58,6 +58,21 @@ describe('PATCH /api/listings/[id]', () => {
     expect(fake.from).not.toHaveBeenCalled();
   });
 
+  it('rejects unparseable JSON body', async () => {
+    const fake = createFakeSupabase({ listings: { data: null, error: null } });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    const request = new NextRequest('http://localhost/api/listings/l1', {
+      method: 'PATCH',
+      body: '{not valid json',
+    });
+    const response = await PATCH(request, { params: Promise.resolve({ id: 'l1' }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBeTruthy();
+  });
+
   it('rejects a wrong-typed favorited field', async () => {
     const fake = createFakeSupabase({ listings: { data: null, error: null } });
     vi.mocked(getServiceClient).mockReturnValue(fake as any);
