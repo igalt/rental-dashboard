@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **Post-MVP update (2026-07-13):** Tasks 18-19 below describe Yad2 as an automated GitHub Actions cron scraper — that assumption turned out to be wrong. Yad2 sits behind Radware Bot Manager, which blocks headless Puppeteer in any run environment (confirmed against both the GitHub Actions runner and a local machine). The scraper code and selectors from Task 18 are correct and still in use, but execution moved to on-demand only: a real (non-headless) browser session, same tier as Facebook/WhatsApp, triggered by the user asking a Claude Code session to check. The Task 19 workflow file now has `workflow_dispatch` only, no `schedule` trigger. See the design spec's Architecture section for the current state.
+
 **Goal:** Build a hosted, shared dashboard that pools rental listings from Yad2 (automated), Facebook/WhatsApp (on-demand, later phases), and manual paste, with collaborative structured + free-text filtering, dedup, and delisting detection.
 
 **Architecture:** Next.js (App Router) on Vercel, Supabase Postgres as the single data store with public read RLS and service-role-only writes, LLM-based extraction/tag-matching via the Anthropic SDK, a Puppeteer+stealth Yad2 scraper run on a GitHub Actions cron schedule, and a shared-secret-authenticated ingest surface for the on-demand Phase 2/3 tools (built in separate later plans).
