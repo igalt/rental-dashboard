@@ -19,7 +19,15 @@ create table listings (
   updated_at timestamptz not null default now()
 );
 
-create unique index listings_source_ref_unique on listings (source, source_ref) where source_ref is not null;
+-- A plain (non-partial) unique constraint, not just an index: Postgres's standard uniqueness
+-- semantics already treat NULL as distinct from every other NULL, so multiple manual/facebook/
+-- whatsapp rows with source_ref = null never conflict with each other on their own. A partial
+-- index (`where source_ref is not null`) looks equivalent but can't be targeted by an
+-- `ON CONFLICT (source, source_ref)` clause — Postgres requires a real constraint (or an index
+-- whose predicate matches the ON CONFLICT clause's own WHERE, which supabase-js's .upsert()
+-- does not add) — so upserts against it fail with "no unique or exclusion constraint matching
+-- the ON CONFLICT specification" (42P10). A genuine constraint has no such restriction.
+alter table listings add constraint listings_source_ref_unique unique (source, source_ref);
 
 create table filter_rules (
   id uuid primary key default uuid_generate_v4(),

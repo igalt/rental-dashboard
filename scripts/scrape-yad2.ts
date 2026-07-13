@@ -24,25 +24,45 @@ async function scrapeYad2(): Promise<ScrapedListing[]> {
     const page = await browser.newPage();
     await page.goto(YAD2_SEARCH_URL, { waitUntil: 'networkidle2' });
 
-    // PLACEHOLDER SELECTORS — replace with real ones once the real Yad2 search URL
-    // is available and the actual DOM structure has been inspected via devtools.
+    // Real selectors, confirmed via live devtools inspection against the user's actual
+    // search URL (2026-07-13). Class names are CSS-module hashes that Yad2 can rotate on
+    // deploy; matched via [class*="..."] on the stable prefix rather than an exact string
+    // so a hash-suffix change alone doesn't silently break scraping.
     const listings = await page.evaluate(() => {
-      const cards = Array.from(document.querySelectorAll('[data-testid="feed-item"]'));
-      return cards.map((card) => {
-        const link = card.querySelector('a')?.getAttribute('href') ?? '';
-        const idMatch = link.match(/item\/([a-zA-Z0-9]+)/);
-        const priceText = card.querySelector('[data-testid="price"]')?.textContent ?? '';
-        const roomsText = card.querySelector('[data-testid="rooms"]')?.textContent ?? '';
-        const areaText = card.querySelector('[data-testid="area"]')?.textContent ?? '';
-        const titleText = card.querySelector('[data-testid="title"]')?.textContent ?? '';
-        return {
-          source_ref: idMatch ? idMatch[1] : link,
-          title: titleText.trim(),
-          price: priceText ? Number(priceText.replace(/[^\d]/g, '')) : null,
-          rooms: roomsText ? Number(roomsText.replace(/[^\d.]/g, '')) : null,
-          area: areaText.trim() || null,
-        };
-      });
+      const cards = Array.from(document.querySelectorAll('[class*="item-layout_feedItemBox"]'));
+      return cards
+        .map((card) => {
+          // Promoted "project" ads render in the same feed but have no price span and no
+          // /item/ detail link — skipping them here is what excludes ads from real listings.
+          const priceEl = card.querySelector('[class*="feed-item-price_price"]');
+          const link = card.querySelector('a[href*="/item/"]');
+          if (!priceEl || !link) return null;
+
+          const href = link.getAttribute('href') ?? '';
+          const pathOnly = href.split('?')[0];
+
+          const titleEl = card.querySelector('[class*="item-data-content_heading"]');
+          const infoLines = Array.from(card.querySelectorAll('[class*="item-data-content_itemInfoLine"]'));
+          // First info line: "{property type}, {neighborhood}, {city}" — area is everything
+          // after the first comma. Second info line: "{rooms} חדרים • קומה {floor} • {sqm} מ״ר".
+          const typeAreaText = infoLines[0]?.textContent ?? '';
+          const roomsFloorSqmText = infoLines[1]?.textContent ?? '';
+          const area = typeAreaText.split(',').slice(1).join(',').trim() || null;
+          const roomsMatch = roomsFloorSqmText.match(/(\d+(?:\.\d+)?)\s*חדרים/);
+          const priceText = priceEl.textContent ?? '';
+
+          return {
+            // Full path (not just a regex-extracted numeric id) — this listing type's URLs
+            // are shaped /item/<region-slug>/<code>, not a plain numeric id, so the full
+            // canonical path is the reliable unique identifier regardless of URL shape.
+            source_ref: pathOnly,
+            title: (titleEl?.textContent ?? '').trim(),
+            price: priceText ? Number(priceText.replace(/[^\d]/g, '')) : null,
+            rooms: roomsMatch ? Number(roomsMatch[1]) : null,
+            area,
+          };
+        })
+        .filter((l): l is NonNullable<typeof l> => l !== null);
     });
 
     return listings.filter((l) => l.source_ref);

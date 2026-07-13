@@ -1,8 +1,11 @@
 name: Scrape Yad2
 
+# Manual-trigger only. Yad2 sits behind Radware Bot Manager, which blocks headless
+# Puppeteer regardless of run environment (confirmed against both this workflow's runner
+# profile and a local machine) — a scheduled cron here would just fail every hour. Yad2
+# checks now happen on-demand via a real browser session instead; this workflow is kept
+# only in case a future stealth/automation approach can get past Radware.
 on:
-  schedule:
-    - cron: '0 * * * *'
   workflow_dispatch: {}
 
 jobs:
