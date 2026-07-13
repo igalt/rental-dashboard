@@ -31,17 +31,29 @@ export function ListingFeed() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-xl">Listings</h2>
-        <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-          <input type="checkbox" checked={showDelisted} onChange={(e) => setShowDelisted(e.target.checked)} />
+    <div>
+      <div className="flex items-center justify-between mb-5 pb-3 border-b border-rule">
+        <h2 className="font-display text-2xl text-ink">
+          Listings
+          {!loading && <span className="font-mono text-sm text-ink-soft ml-2">({listings.length})</span>}
+        </h2>
+        <label className="flex items-center gap-2 text-xs font-mono uppercase tracking-wide text-ink-soft cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showDelisted}
+            onChange={(e) => setShowDelisted(e.target.checked)}
+            className="accent-rust"
+          />
           Show delisted too
         </label>
       </div>
-      {loading && <p className="text-sm text-gray-500">Loading…</p>}
-      {!loading && listings.length === 0 && <p className="text-sm text-gray-500">No listings yet.</p>}
-      <div className="space-y-3">
+      {loading && <p className="text-sm text-ink-soft italic">Loading…</p>}
+      {!loading && listings.length === 0 && (
+        <p className="text-sm text-ink-soft italic border border-dashed border-rule rounded-sm p-6 text-center">
+          No listings yet — paste one in with Quick add, or run an on-demand check.
+        </p>
+      )}
+      <div className="space-y-4">
         {listings.map((listing) => (
           <ListingCard key={listing.id} listing={listing} onUpdate={handleUpdate} onDuplicateAction={handleDuplicateAction} />
         ))}

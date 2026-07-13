@@ -37,21 +37,21 @@ export function TagManager() {
   }
 
   return (
-    <div className="space-y-2 border rounded-lg p-4 bg-white dark:bg-neutral-900">
-      <h2 className="font-semibold">Tags</h2>
-      <div className="flex gap-2 flex-wrap">
+    <div className="bg-paper-raised border border-rule rounded-sm p-5 shadow-[3px_3px_0_0_var(--rule)]">
+      <h2 className="font-mono text-xs tracking-[0.15em] uppercase text-ink-soft mb-3">Tags</h2>
+      <div className="flex gap-1.5 flex-wrap mb-3">
         {tags.map((tag) => (
-          <span key={tag.id} className="border rounded-full px-3 py-1 text-sm flex items-center gap-1">
-            {tag.label} <button className="text-gray-400 hover:text-red-600" onClick={() => removeTag(tag.id)}>×</button>
+          <span key={tag.id} className="border border-sage/40 bg-sage/10 text-sage rounded-full px-2.5 py-0.5 text-xs font-mono flex items-center gap-1.5">
+            {tag.label} <button className="text-sage/60 hover:text-rust-dark" onClick={() => removeTag(tag.id)}>×</button>
           </span>
         ))}
-        {tags.length === 0 && <span className="text-sm text-gray-500">No tags yet.</span>}
+        {tags.length === 0 && <span className="text-sm text-ink-soft italic">No tags yet.</span>}
       </div>
-      <div className="flex gap-2 pt-1">
-        <input className="border rounded px-2 py-1 text-sm flex-1 bg-transparent" value={label} onChange={(e) => setLabel(e.target.value)} placeholder='e.g. "pet friendly"' />
-        <button className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-700" onClick={addTag}>Add tag</button>
+      <div className="flex gap-1.5 pt-3 border-t border-rule">
+        <input className="border border-rule rounded-sm px-2 py-1 text-xs font-mono flex-1 bg-paper" value={label} onChange={(e) => setLabel(e.target.value)} placeholder='e.g. "pet friendly"' />
+        <button className="px-3 py-1 rounded-sm bg-rust text-paper-raised text-xs font-mono uppercase tracking-wide hover:bg-rust-dark transition-colors" onClick={addTag}>Add</button>
       </div>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-xs text-rust-dark mt-2">{error}</p>}
     </div>
   );
 }

@@ -22,24 +22,24 @@ export function QuickAddBox({ onAdded }: { onAdded?: () => void }) {
   }
 
   return (
-    <div className="space-y-2 border rounded-lg p-4 bg-white dark:bg-neutral-900">
-      <h2 className="font-semibold">Quick add</h2>
-      <p className="text-sm text-gray-500 dark:text-gray-400">Paste a listing from Facebook, WhatsApp, or anywhere else.</p>
+    <div className="bg-paper-raised border border-rule rounded-sm p-5 shadow-[3px_3px_0_0_var(--rule)]">
+      <h2 className="font-mono text-xs tracking-[0.15em] uppercase text-ink-soft mb-1">Quick add</h2>
+      <p className="text-sm text-ink-soft mb-3">Paste a listing from Facebook, WhatsApp, or anywhere else.</p>
       <textarea
-        className="w-full border rounded-md p-2 text-sm bg-transparent"
+        className="w-full border border-rule rounded-sm p-2 text-sm bg-paper mb-3 focus:outline-none focus:ring-1 focus:ring-rust"
         rows={3}
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder="Paste listing text here..."
       />
       <button
-        className="px-3 py-1 rounded bg-blue-600 text-white text-sm hover:bg-blue-700 disabled:opacity-50"
+        className="px-3 py-1 rounded-sm bg-rust text-paper-raised text-xs font-mono uppercase tracking-wide hover:bg-rust-dark transition-colors disabled:opacity-40 disabled:hover:bg-rust"
         onClick={handleSubmit}
         disabled={isPending || !text.trim()}
       >
-        {isPending ? 'Adding...' : 'Add listing'}
+        {isPending ? 'Adding…' : 'Add listing'}
       </button>
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-xs text-rust-dark mt-2">{error}</p>}
     </div>
   );
 }
