@@ -16,6 +16,13 @@ const SOURCE_ACCENT: Record<Listing['source'], string> = {
   manual: 'var(--ochre)',
 };
 
+function getListingUrl(listing: Listing): string | null {
+  if (!listing.source_ref) return null;
+  if (/^https?:\/\//.test(listing.source_ref)) return listing.source_ref;
+  if (listing.source === 'yad2') return `https://www.yad2.co.il${listing.source_ref}`;
+  return null;
+}
+
 export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
   const [notes, setNotes] = useState(listing.notes ?? '');
 
@@ -24,6 +31,7 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
   }, [listing.notes]);
 
   const accent = SOURCE_ACCENT[listing.source];
+  const url = getListingUrl(listing);
 
   return (
     <div
@@ -36,7 +44,13 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
             {listing.source}
           </span>
           <h3 dir="auto" className="font-display text-xl leading-snug text-ink mt-0.5">
-            {listing.title ?? 'Untitled listing'}
+            {url ? (
+              <a href={url} target="_blank" rel="noopener noreferrer" className="hover:text-rust-dark underline decoration-rule underline-offset-4">
+                {listing.title ?? 'Untitled listing'}
+              </a>
+            ) : (
+              listing.title ?? 'Untitled listing'
+            )}
           </h3>
           <p dir="auto" className="font-mono text-xs text-ink-soft mt-1.5 flex flex-wrap gap-x-2">
             <span>₪{listing.price ?? '—'}</span>
@@ -44,6 +58,14 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
             <span>{listing.rooms ?? '—'} rooms</span>
             <span>·</span>
             <span>{listing.area ?? 'unknown area'}</span>
+            {url && (
+              <>
+                <span>·</span>
+                <a href={url} target="_blank" rel="noopener noreferrer" className="text-rust hover:text-rust-dark">
+                  view original ↗
+                </a>
+              </>
+            )}
           </p>
         </div>
         {listing.delisted_at && (
@@ -52,6 +74,15 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
           </span>
         )}
       </div>
+
+      {listing.raw_text && (
+        <details className="text-sm">
+          <summary className="font-mono text-[11px] tracking-[0.15em] uppercase text-ink-soft cursor-pointer select-none">
+            Description
+          </summary>
+          <p dir="auto" className="mt-2 text-ink whitespace-pre-wrap">{listing.raw_text}</p>
+        </details>
+      )}
 
       {listing.possible_duplicate_of && (
         <div className="bg-ochre/10 border border-ochre/40 rounded-sm p-2.5 text-sm flex justify-between items-center gap-2">
