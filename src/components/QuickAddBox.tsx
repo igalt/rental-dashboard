@@ -40,6 +40,9 @@ export function QuickAddBox({ onAdded }: { onAdded?: () => void }) {
         {isPending ? 'Adding…' : 'Add listing'}
       </button>
       {error && <p className="text-xs text-rust-dark mt-2">{error}</p>}
+      <p className="text-xs text-ink-soft mt-3 pt-3 border-t border-rule">
+        For Yad2, ask Claude Code to <span className="font-mono text-ink">check yad2</span> instead — it can't be pasted here.
+      </p>
     </div>
   );
 }
