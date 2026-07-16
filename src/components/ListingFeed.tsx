@@ -9,6 +9,7 @@ import { groupDuplicates } from '../lib/listings/groupDuplicates';
 export function ListingFeed() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [showDelisted, setShowDelisted] = useState(false);
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -33,7 +34,11 @@ export function ListingFeed() {
     refresh();
   }
 
-  const groups = useMemo(() => groupDuplicates(listings), [listings]);
+  const visibleListings = useMemo(
+    () => (favoritesOnly ? listings.filter((l) => l.favorited) : listings),
+    [listings, favoritesOnly]
+  );
+  const groups = useMemo(() => groupDuplicates(visibleListings), [visibleListings]);
   const selected = listings.find((l) => l.id === selectedId) ?? null;
 
   return (
@@ -41,22 +46,38 @@ export function ListingFeed() {
       <div className="flex items-center justify-between mb-5 pb-3 border-b border-rule">
         <h2 className="font-display text-2xl text-ink">
           Listings
-          {!loading && <span className="font-mono text-sm text-ink-soft ml-2">({listings.length})</span>}
+          {!loading && <span className="font-mono text-sm text-ink-soft ml-2">({visibleListings.length})</span>}
         </h2>
-        <label className="flex items-center gap-2 text-xs font-mono uppercase tracking-wide text-ink-soft cursor-pointer">
-          <input
-            type="checkbox"
-            checked={showDelisted}
-            onChange={(e) => setShowDelisted(e.target.checked)}
-            className="accent-rust"
-          />
-          Show delisted too
-        </label>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-xs font-mono uppercase tracking-wide text-ink-soft cursor-pointer">
+            <input
+              type="checkbox"
+              checked={favoritesOnly}
+              onChange={(e) => setFavoritesOnly(e.target.checked)}
+              className="accent-rust"
+            />
+            Show favorites only
+          </label>
+          <label className="flex items-center gap-2 text-xs font-mono uppercase tracking-wide text-ink-soft cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showDelisted}
+              onChange={(e) => setShowDelisted(e.target.checked)}
+              className="accent-rust"
+            />
+            Show delisted too
+          </label>
+        </div>
       </div>
       {loading && <p className="text-sm text-ink-soft italic">Loading…</p>}
       {!loading && listings.length === 0 && (
         <p className="text-sm text-ink-soft italic border border-dashed border-rule rounded-sm p-6 text-center">
           No listings yet — paste one in with Quick add, or run an on-demand check.
+        </p>
+      )}
+      {!loading && listings.length > 0 && visibleListings.length === 0 && (
+        <p className="text-sm text-ink-soft italic border border-dashed border-rule rounded-sm p-6 text-center">
+          No favorites yet — star a listing to see it here.
         </p>
       )}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
