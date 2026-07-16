@@ -38,6 +38,17 @@ alter table listings add column status text not null default 'new' check (status
 -- when the site states one. Both null when the site just says "flexible" (not real info).
 alter table listings add column move_in_immediate boolean;
 
+-- floor/built_sqm come from the feed/detail pages' own labeled fields; condition holds the
+-- site's free-text value (e.g. "משופץ") rather than a boolean, since it's more informative
+-- than a single renovated/not flag. balcony/storage/furnished follow the same true/false/null
+-- convention as safe_room: null means the site doesn't show that amenity section at all.
+alter table listings add column floor text;
+alter table listings add column built_sqm numeric;
+alter table listings add column condition text;
+alter table listings add column balcony boolean;
+alter table listings add column storage boolean;
+alter table listings add column furnished boolean;
+
 create table filter_rules (
   id uuid primary key default uuid_generate_v4(),
   field text not null check (field in ('price','rooms','area','move_in_date')),

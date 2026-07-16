@@ -17,6 +17,12 @@ export interface Listing {
   raw_text: string | null;
   image_url: string | null;
   safe_room: boolean | null;
+  floor: string | null;
+  built_sqm: number | null;
+  condition: string | null;
+  balcony: boolean | null;
+  storage: boolean | null;
+  furnished: boolean | null;
   status: ListingStatus;
   extracted_at: string;
   favorited: boolean;

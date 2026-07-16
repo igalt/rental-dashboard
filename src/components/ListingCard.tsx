@@ -53,6 +53,15 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
   const accent = SOURCE_ACCENT[listing.source];
   const url = getListingUrl(listing);
 
+  const extraDetails = [
+    listing.floor && `floor: ${listing.floor}`,
+    listing.built_sqm && `${listing.built_sqm}m² built`,
+    listing.condition,
+    listing.balcony && 'balcony',
+    listing.storage && 'storage',
+    listing.furnished && 'furnished',
+  ].filter(Boolean) as string[];
+
   return (
     <div
       className={`bg-paper-raised border border-rule rounded-sm p-5 space-y-3 border-l-4 transition-opacity ${listing.irrelevant ? 'opacity-50' : ''}`}
@@ -138,6 +147,11 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
               </>
             )}
           </p>
+          {extraDetails.length > 0 && (
+            <p dir="auto" className="font-mono text-xs text-ink-soft mt-1">
+              {extraDetails.join(' · ')}
+            </p>
+          )}
         </div>
         {listing.delisted_at && (
           <span className="text-[10px] font-mono uppercase tracking-wide bg-ink text-paper rounded-full px-2 py-1 whitespace-nowrap shrink-0 -rotate-2">

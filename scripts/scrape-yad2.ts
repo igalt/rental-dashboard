@@ -17,10 +17,16 @@ interface ScrapedListing {
   price: number | null;
   rooms: number | null;
   area: string | null;
+  floor: string | null;
   image_url: string | null;
   safe_room: boolean | null;
   move_in_date: string | null;
   move_in_immediate: boolean | null;
+  built_sqm: number | null;
+  condition: string | null;
+  balcony: boolean | null;
+  storage: boolean | null;
+  furnished: boolean | null;
 }
 
 interface ListingDetails {
@@ -28,6 +34,11 @@ interface ListingDetails {
   safe_room: boolean | null;
   move_in_date: string | null;
   move_in_immediate: boolean | null;
+  built_sqm: number | null;
+  condition: string | null;
+  balcony: boolean | null;
+  storage: boolean | null;
+  furnished: boolean | null;
 }
 
 // The feed page doesn't expose photos, the safe-room (ממ"ד) amenity, or the entrance date —
@@ -40,7 +51,17 @@ interface ListingDetails {
 // מידית" (immediate), or "כניסה גמישה" (flexible) — the last case is too vague to be worth
 // surfacing, so both stay null unless the site gives a real date or says immediate.
 async function fetchListingDetails(page: Page, sourceRef: string): Promise<ListingDetails> {
-  const empty = { image_url: null, safe_room: null, move_in_date: null, move_in_immediate: null };
+  const empty = {
+    image_url: null,
+    safe_room: null,
+    move_in_date: null,
+    move_in_immediate: null,
+    built_sqm: null,
+    condition: null,
+    balcony: null,
+    storage: null,
+    furnished: null,
+  };
   const response = await page.goto(`https://www.yad2.co.il${sourceRef}`, { waitUntil: 'networkidle2' });
   if (!response || response.status() === 404) return empty;
 
@@ -50,8 +71,16 @@ async function fetchListingDetails(page: Page, sourceRef: string): Promise<Listi
     const raw = og?.getAttribute('content') ?? img?.getAttribute('src') ?? null;
     const image_url = raw && !raw.includes('placeholder') ? raw.split('?')[0] : null;
 
-    const mamad = document.querySelector('[data-testid="security-room-item"]');
-    const safe_room = mamad ? !mamad.className.includes('disabled') : null;
+    // Amenity checklist items: present when the <li>'s class is empty, explicitly marked
+    // absent when it includes "disabled", not applicable at all when the element is missing.
+    function amenity(testid: string): boolean | null {
+      const el = document.querySelector(`[data-testid="${testid}"]`);
+      return el ? !el.className.includes('disabled') : null;
+    }
+    const safe_room = amenity('security-room-item');
+    const balcony = amenity('balcony-item');
+    const storage = amenity('warehouse-item');
+    const furnished = amenity('furnished-item');
 
     const entranceEl = document.querySelector('[data-testid="entrance-date-value"]');
     const entranceText = entranceEl?.textContent?.trim() ?? '';
@@ -65,7 +94,14 @@ async function fetchListingDetails(page: Page, sourceRef: string): Promise<Listi
       move_in_immediate = true;
     }
 
-    return { image_url, safe_room, move_in_date, move_in_immediate };
+    const sqmEl = document.querySelector('[data-testid="square-meter-build-value"]');
+    const sqmMatch = sqmEl?.textContent?.match(/(\d+(?:\.\d+)?)/);
+    const built_sqm = sqmMatch ? Number(sqmMatch[1]) : null;
+
+    const conditionEl = document.querySelector('[data-testid="property-condition-value"]');
+    const condition = conditionEl?.textContent?.trim() || null;
+
+    return { image_url, safe_room, move_in_date, move_in_immediate, built_sqm, condition, balcony, storage, furnished };
   });
 }
 
@@ -100,6 +136,10 @@ async function scrapeYad2(): Promise<ScrapedListing[]> {
           const roomsFloorSqmText = infoLines[1]?.textContent ?? '';
           const area = typeAreaText.split(',').slice(1).join(',').trim() || null;
           const roomsMatch = roomsFloorSqmText.match(/(\d+(?:\.\d+)?)\s*חדרים/);
+          // Floor sits between "קומה" and the next bullet, wrapped in bidi control chars
+          // (‎/‏) that need stripping — e.g. "קומה ‎קרקע‏ •" → "קרקע".
+          const floorMatch = roomsFloorSqmText.match(/קומה\s*([\s\S]*?)\s*•/);
+          const floor = floorMatch ? floorMatch[1].replace(/[‎‏]/g, '').trim() || null : null;
           const priceText = priceEl.textContent ?? '';
 
           return {
@@ -111,6 +151,7 @@ async function scrapeYad2(): Promise<ScrapedListing[]> {
             price: priceText ? Number(priceText.replace(/[^\d]/g, '')) : null,
             rooms: roomsMatch ? Number(roomsMatch[1]) : null,
             area,
+            floor,
           };
         })
         .filter((l): l is NonNullable<typeof l> => l !== null);
@@ -161,10 +202,16 @@ async function main() {
         price: listing.price,
         rooms: listing.rooms,
         area: listing.area,
+        floor: listing.floor,
         image_url: listing.image_url,
         safe_room: listing.safe_room,
         move_in_date: listing.move_in_date,
         move_in_immediate: listing.move_in_immediate,
+        built_sqm: listing.built_sqm,
+        condition: listing.condition,
+        balcony: listing.balcony,
+        storage: listing.storage,
+        furnished: listing.furnished,
         delisted_at: null,
         possible_duplicate_of: duplicateId,
         updated_at: new Date().toISOString(),
