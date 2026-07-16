@@ -5,7 +5,7 @@ import type { Listing, ListingStatus } from '../types/listing';
 
 interface Props {
   listing: Listing;
-  onUpdate: (id: string, patch: Partial<Pick<Listing, 'favorited' | 'irrelevant' | 'notes' | 'status'>>) => void;
+  onUpdate: (id: string, patch: Partial<Pick<Listing, 'favorited' | 'irrelevant' | 'notes' | 'status' | 'title'>>) => void;
   onDuplicateAction: (id: string, action: 'merge' | 'dismiss') => void;
 }
 
@@ -25,12 +25,30 @@ function getListingUrl(listing: Listing): string | null {
   return null;
 }
 
+function formatMoveInDate(dateStr: string): string {
+  const [year, month, day] = dateStr.split('-');
+  return `${day}/${month}/${year}`;
+}
+
 export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
   const [notes, setNotes] = useState(listing.notes ?? '');
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(listing.title ?? '');
 
   useEffect(() => {
     setNotes(listing.notes ?? '');
   }, [listing.notes]);
+
+  useEffect(() => {
+    setTitleDraft(listing.title ?? '');
+  }, [listing.title]);
+
+  function saveTitle() {
+    setEditingTitle(false);
+    const trimmed = titleDraft.trim();
+    if (trimmed && trimmed !== listing.title) onUpdate(listing.id, { title: trimmed });
+    else setTitleDraft(listing.title ?? '');
+  }
 
   const accent = SOURCE_ACCENT[listing.source];
   const url = getListingUrl(listing);
@@ -52,15 +70,41 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
           <span className="font-mono text-[11px] tracking-[0.15em] uppercase" style={{ color: accent }}>
             {listing.source}
           </span>
-          <h3 dir="auto" className="font-display text-xl leading-snug text-ink mt-0.5">
-            {url ? (
-              <a href={url} target="_blank" rel="noopener noreferrer" className="hover:text-rust-dark underline decoration-rule underline-offset-4">
-                {listing.title ?? 'Untitled listing'}
-              </a>
-            ) : (
-              listing.title ?? 'Untitled listing'
-            )}
-          </h3>
+          {editingTitle ? (
+            <input
+              dir="auto"
+              autoFocus
+              className="font-display text-xl leading-snug text-ink mt-0.5 w-full bg-paper border border-rust rounded-sm px-1 focus:outline-none"
+              value={titleDraft}
+              onChange={(e) => setTitleDraft(e.target.value)}
+              onBlur={saveTitle}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur();
+                if (e.key === 'Escape') {
+                  setTitleDraft(listing.title ?? '');
+                  setEditingTitle(false);
+                }
+              }}
+            />
+          ) : (
+            <h3 dir="auto" className="font-display text-xl leading-snug text-ink mt-0.5 flex items-center gap-2 group">
+              {url ? (
+                <a href={url} target="_blank" rel="noopener noreferrer" className="hover:text-rust-dark underline decoration-rule underline-offset-4">
+                  {listing.title ?? 'Untitled listing'}
+                </a>
+              ) : (
+                <span>{listing.title ?? 'Untitled listing'}</span>
+              )}
+              <button
+                onClick={() => setEditingTitle(true)}
+                className="font-mono text-xs text-ink-soft/40 hover:text-rust-dark transition-colors shrink-0"
+                aria-label="Edit listing name"
+                title="Edit listing name"
+              >
+                ✎
+              </button>
+            </h3>
+          )}
           <p dir="auto" className="font-mono text-xs text-ink-soft mt-1.5 flex flex-wrap gap-x-2">
             <span>₪{listing.price ?? '—'}</span>
             <span>·</span>
@@ -71,6 +115,18 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
               <>
                 <span>·</span>
                 <span>{listing.safe_room ? 'safe room' : 'no safe room'}</span>
+              </>
+            )}
+            {listing.move_in_date && (
+              <>
+                <span>·</span>
+                <span>entrance {formatMoveInDate(listing.move_in_date)}</span>
+              </>
+            )}
+            {!listing.move_in_date && listing.move_in_immediate && (
+              <>
+                <span>·</span>
+                <span>immediate entrance</span>
               </>
             )}
             {url && (

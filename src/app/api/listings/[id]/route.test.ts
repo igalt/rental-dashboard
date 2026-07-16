@@ -91,6 +91,39 @@ describe('PATCH /api/listings/[id]', () => {
     );
   });
 
+  it('updates title', async () => {
+    const fake = createFakeSupabase({ listings: { data: { id: 'l1', title: 'Renamed listing' }, error: null } });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    const request = new NextRequest('http://localhost/api/listings/l1', {
+      method: 'PATCH',
+      body: JSON.stringify({ title: 'Renamed listing' }),
+    });
+    const response = await PATCH(request, { params: Promise.resolve({ id: 'l1' }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.listing.title).toBe('Renamed listing');
+    expect(fake.builders.listings.update).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Renamed listing' })
+    );
+  });
+
+  it('rejects an empty title', async () => {
+    const fake = createFakeSupabase({ listings: { data: null, error: null } });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    const request = new NextRequest('http://localhost/api/listings/l1', {
+      method: 'PATCH',
+      body: JSON.stringify({ title: '   ' }),
+    });
+    const response = await PATCH(request, { params: Promise.resolve({ id: 'l1' }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBeTruthy();
+  });
+
   it('rejects an invalid status value', async () => {
     const fake = createFakeSupabase({ listings: { data: null, error: null } });
     vi.mocked(getServiceClient).mockReturnValue(fake as any);

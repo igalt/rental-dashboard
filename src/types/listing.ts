@@ -13,6 +13,7 @@ export interface Listing {
   rooms: number | null;
   area: string | null;
   move_in_date: string | null;
+  move_in_immediate: boolean | null;
   raw_text: string | null;
   image_url: string | null;
   safe_room: boolean | null;

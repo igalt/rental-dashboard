@@ -19,21 +19,30 @@ interface ScrapedListing {
   area: string | null;
   image_url: string | null;
   safe_room: boolean | null;
+  move_in_date: string | null;
+  move_in_immediate: boolean | null;
 }
 
 interface ListingDetails {
   image_url: string | null;
   safe_room: boolean | null;
+  move_in_date: string | null;
+  move_in_immediate: boolean | null;
 }
 
-// The feed page doesn't expose photos or the safe-room (ממ"ד) amenity — both only show up
-// on each listing's own detail page, so enrichment needs one extra visit per listing.
+// The feed page doesn't expose photos, the safe-room (ממ"ד) amenity, or the entrance date —
+// all three only show up on each listing's own detail page, so enrichment needs one extra
+// visit per listing.
 // safe_room: true if the site marks the amenity present, false if the site explicitly marks
 // it absent (a real, disabled-styled entry still renders), null if the section isn't shown
 // at all for that listing (unknown, not stated either way).
+// move_in_date/move_in_immediate: the site's entrance-date field is either an actual date, "כניסה
+// מידית" (immediate), or "כניסה גמישה" (flexible) — the last case is too vague to be worth
+// surfacing, so both stay null unless the site gives a real date or says immediate.
 async function fetchListingDetails(page: Page, sourceRef: string): Promise<ListingDetails> {
+  const empty = { image_url: null, safe_room: null, move_in_date: null, move_in_immediate: null };
   const response = await page.goto(`https://www.yad2.co.il${sourceRef}`, { waitUntil: 'networkidle2' });
-  if (!response || response.status() === 404) return { image_url: null, safe_room: null };
+  if (!response || response.status() === 404) return empty;
 
   return page.evaluate(() => {
     const og = document.querySelector('meta[property="og:image"]');
@@ -44,7 +53,19 @@ async function fetchListingDetails(page: Page, sourceRef: string): Promise<Listi
     const mamad = document.querySelector('[data-testid="security-room-item"]');
     const safe_room = mamad ? !mamad.className.includes('disabled') : null;
 
-    return { image_url, safe_room };
+    const entranceEl = document.querySelector('[data-testid="entrance-date-value"]');
+    const entranceText = entranceEl?.textContent?.trim() ?? '';
+    let move_in_date: string | null = null;
+    let move_in_immediate: boolean | null = null;
+    const dateMatch = entranceText.match(/(\d{2})\/(\d{2})\/(\d{2})$/);
+    if (dateMatch) {
+      const [, dd, mm, yy] = dateMatch;
+      move_in_date = `20${yy}-${mm}-${dd}`;
+    } else if (/מיידי|מידית/.test(entranceText)) {
+      move_in_immediate = true;
+    }
+
+    return { image_url, safe_room, move_in_date, move_in_immediate };
   });
 }
 
@@ -142,6 +163,8 @@ async function main() {
         area: listing.area,
         image_url: listing.image_url,
         safe_room: listing.safe_room,
+        move_in_date: listing.move_in_date,
+        move_in_immediate: listing.move_in_immediate,
         delisted_at: null,
         possible_duplicate_of: duplicateId,
         updated_at: new Date().toISOString(),

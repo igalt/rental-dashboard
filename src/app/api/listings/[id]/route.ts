@@ -20,7 +20,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   }
   const bodyRecord = body as Record<string, unknown>;
 
-  const allowedFields = ['favorited', 'irrelevant', 'notes', 'status'] as const;
+  const allowedFields = ['favorited', 'irrelevant', 'notes', 'status', 'title'] as const;
   const update: Record<string, unknown> = {};
   for (const field of allowedFields) {
     if (field in bodyRecord) update[field] = bodyRecord[field];
@@ -37,6 +37,9 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   }
   if ('status' in update && !['new', 'contacted', 'seen'].includes(update.status as string)) {
     return NextResponse.json({ error: 'status must be one of new, contacted, seen' }, { status: 400 });
+  }
+  if ('title' in update && (typeof update.title !== 'string' || update.title.trim().length === 0)) {
+    return NextResponse.json({ error: 'title must be a non-empty string' }, { status: 400 });
   }
 
   if (Object.keys(update).length === 0) {

@@ -34,6 +34,9 @@ alter table listings add column image_url text;
 -- explicitly absent, null = not stated (most listings don't expose this field at all).
 alter table listings add column safe_room boolean;
 alter table listings add column status text not null default 'new' check (status in ('new', 'contacted', 'seen'));
+-- true = site states entry is immediate ("כניסה מידית"). move_in_date holds an actual date
+-- when the site states one. Both null when the site just says "flexible" (not real info).
+alter table listings add column move_in_immediate boolean;
 
 create table filter_rules (
   id uuid primary key default uuid_generate_v4(),
