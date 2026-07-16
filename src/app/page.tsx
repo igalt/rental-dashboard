@@ -10,7 +10,7 @@ export default function Home() {
   const [feedKey, setFeedKey] = useState(0);
 
   return (
-    <main className="max-w-6xl mx-auto px-6 py-10 md:py-14">
+    <main className="max-w-[1600px] mx-auto px-6 py-10 md:py-14">
       <header className="mb-10 border-b border-rule pb-6">
         <p className="font-mono text-xs tracking-[0.2em] uppercase text-ink-soft mb-2">
           Two-person operation · no login required

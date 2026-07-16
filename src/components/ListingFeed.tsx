@@ -3,12 +3,14 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import type { Listing } from '../types/listing';
 import { ListingCard } from './ListingCard';
+import { ListingRow } from './ListingRow';
 import { groupDuplicates } from '../lib/listings/groupDuplicates';
 
 export function ListingFeed() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [showDelisted, setShowDelisted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     const response = await fetch(`/api/listings${showDelisted ? '?show_delisted=true' : ''}`);
@@ -32,6 +34,7 @@ export function ListingFeed() {
   }
 
   const groups = useMemo(() => groupDuplicates(listings), [listings]);
+  const selected = listings.find((l) => l.id === selectedId) ?? null;
 
   return (
     <div>
@@ -56,23 +59,39 @@ export function ListingFeed() {
           No listings yet — paste one in with Quick add, or run an on-demand check.
         </p>
       )}
-      <div className="space-y-4">
-        {groups.map((group) =>
-          group.length > 1 ? (
-            <div
-              key={group[0].id}
-              className="rounded-sm border-2 border-dashed border-ochre/50 bg-ochre/5 p-3 space-y-3"
-            >
-              <p className="font-mono text-[11px] tracking-[0.15em] uppercase text-ochre">
-                Possible duplicates ({group.length})
-              </p>
-              {group.map((listing) => (
-                <ListingCard key={listing.id} listing={listing} onUpdate={handleUpdate} onDuplicateAction={handleDuplicateAction} />
-              ))}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+        <div className="space-y-3">
+          {groups.map((group) =>
+            group.length > 1 ? (
+              <div
+                key={group[0].id}
+                className="rounded-sm border-2 border-dashed border-ochre/50 bg-ochre/5 p-2 space-y-2"
+              >
+                <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-ochre px-1">
+                  Possible duplicates ({group.length})
+                </p>
+                {group.map((listing) => (
+                  <ListingRow key={listing.id} listing={listing} selected={listing.id === selectedId} onSelect={setSelectedId} />
+                ))}
+              </div>
+            ) : (
+              <ListingRow key={group[0].id} listing={group[0]} selected={group[0].id === selectedId} onSelect={setSelectedId} />
+            )
+          )}
+        </div>
+
+        {selected && (
+          <div className="xl:sticky xl:top-10">
+            <div className="flex justify-end mb-2">
+              <button
+                onClick={() => setSelectedId(null)}
+                className="font-mono text-xs uppercase tracking-wide text-ink-soft hover:text-rust-dark"
+              >
+                ✕ close
+              </button>
             </div>
-          ) : (
-            <ListingCard key={group[0].id} listing={group[0]} onUpdate={handleUpdate} onDuplicateAction={handleDuplicateAction} />
-          )
+            <ListingCard listing={selected} onUpdate={handleUpdate} onDuplicateAction={handleDuplicateAction} />
+          </div>
         )}
       </div>
     </div>
