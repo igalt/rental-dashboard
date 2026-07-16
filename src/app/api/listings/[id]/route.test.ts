@@ -73,6 +73,39 @@ describe('PATCH /api/listings/[id]', () => {
     expect(body.error).toBeTruthy();
   });
 
+  it('updates status', async () => {
+    const fake = createFakeSupabase({ listings: { data: { id: 'l1', status: 'contacted' }, error: null } });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    const request = new NextRequest('http://localhost/api/listings/l1', {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'contacted' }),
+    });
+    const response = await PATCH(request, { params: Promise.resolve({ id: 'l1' }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.listing.status).toBe('contacted');
+    expect(fake.builders.listings.update).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'contacted' })
+    );
+  });
+
+  it('rejects an invalid status value', async () => {
+    const fake = createFakeSupabase({ listings: { data: null, error: null } });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    const request = new NextRequest('http://localhost/api/listings/l1', {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'archived' }),
+    });
+    const response = await PATCH(request, { params: Promise.resolve({ id: 'l1' }) });
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error).toBeTruthy();
+  });
+
   it('rejects a wrong-typed favorited field', async () => {
     const fake = createFakeSupabase({ listings: { data: null, error: null } });
     vi.mocked(getServiceClient).mockReturnValue(fake as any);

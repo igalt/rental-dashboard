@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import type { Listing } from '../types/listing';
 import { ListingCard } from './ListingCard';
+import { groupDuplicates } from '../lib/listings/groupDuplicates';
 
 export function ListingFeed() {
   const [listings, setListings] = useState<Listing[]>([]);
@@ -30,6 +31,8 @@ export function ListingFeed() {
     refresh();
   }
 
+  const groups = useMemo(() => groupDuplicates(listings), [listings]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-5 pb-3 border-b border-rule">
@@ -54,9 +57,23 @@ export function ListingFeed() {
         </p>
       )}
       <div className="space-y-4">
-        {listings.map((listing) => (
-          <ListingCard key={listing.id} listing={listing} onUpdate={handleUpdate} onDuplicateAction={handleDuplicateAction} />
-        ))}
+        {groups.map((group) =>
+          group.length > 1 ? (
+            <div
+              key={group[0].id}
+              className="rounded-sm border-2 border-dashed border-ochre/50 bg-ochre/5 p-3 space-y-3"
+            >
+              <p className="font-mono text-[11px] tracking-[0.15em] uppercase text-ochre">
+                Possible duplicates ({group.length})
+              </p>
+              {group.map((listing) => (
+                <ListingCard key={listing.id} listing={listing} onUpdate={handleUpdate} onDuplicateAction={handleDuplicateAction} />
+              ))}
+            </div>
+          ) : (
+            <ListingCard key={group[0].id} listing={group[0]} onUpdate={handleUpdate} onDuplicateAction={handleDuplicateAction} />
+          )
+        )}
       </div>
     </div>
   );

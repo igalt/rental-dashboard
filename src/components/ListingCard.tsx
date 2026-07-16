@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Listing } from '../types/listing';
+import type { Listing, ListingStatus } from '../types/listing';
 
 interface Props {
   listing: Listing;
-  onUpdate: (id: string, patch: Partial<Pick<Listing, 'favorited' | 'irrelevant' | 'notes'>>) => void;
+  onUpdate: (id: string, patch: Partial<Pick<Listing, 'favorited' | 'irrelevant' | 'notes' | 'status'>>) => void;
   onDuplicateAction: (id: string, action: 'merge' | 'dismiss') => void;
 }
+
+const STATUSES: ListingStatus[] = ['new', 'contacted', 'seen'];
 
 const SOURCE_ACCENT: Record<Listing['source'], string> = {
   yad2: 'var(--rust)',
@@ -39,7 +41,14 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
       style={{ borderLeftColor: accent }}
     >
       <div className="flex justify-between items-start gap-3">
-        <div className="min-w-0">
+        {listing.image_url && (
+          <img
+            src={listing.image_url}
+            alt=""
+            className="w-20 h-20 object-cover rounded-sm border border-rule shrink-0"
+          />
+        )}
+        <div className="min-w-0 flex-1">
           <span className="font-mono text-[11px] tracking-[0.15em] uppercase" style={{ color: accent }}>
             {listing.source}
           </span>
@@ -58,6 +67,12 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
             <span>{listing.rooms ?? '—'} rooms</span>
             <span>·</span>
             <span>{listing.area ?? 'unknown area'}</span>
+            {listing.safe_room !== null && (
+              <>
+                <span>·</span>
+                <span>{listing.safe_room ? 'safe room' : 'no safe room'}</span>
+              </>
+            )}
             {url && (
               <>
                 <span>·</span>
@@ -103,6 +118,22 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
           </div>
         </div>
       )}
+
+      <div className="flex gap-1.5">
+        {STATUSES.map((status) => (
+          <button
+            key={status}
+            className={`px-3 py-1 rounded-sm border text-xs font-mono uppercase tracking-wide transition-colors ${
+              listing.status === status
+                ? 'bg-ink text-paper border-ink'
+                : 'border-rule text-ink-soft hover:border-ink'
+            }`}
+            onClick={() => onUpdate(listing.id, { status })}
+          >
+            {status}
+          </button>
+        ))}
+      </div>
 
       <div className="flex gap-1.5">
         <button

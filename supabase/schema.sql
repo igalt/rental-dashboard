@@ -29,6 +29,12 @@ create table listings (
 -- the ON CONFLICT specification" (42P10). A genuine constraint has no such restriction.
 alter table listings add constraint listings_source_ref_unique unique (source, source_ref);
 
+alter table listings add column image_url text;
+-- true = site confirms a safe room (ממ"ד/מקלט) is present, false = site confirms one is
+-- explicitly absent, null = not stated (most listings don't expose this field at all).
+alter table listings add column safe_room boolean;
+alter table listings add column status text not null default 'new' check (status in ('new', 'contacted', 'seen'));
+
 create table filter_rules (
   id uuid primary key default uuid_generate_v4(),
   field text not null check (field in ('price','rooms','area','move_in_date')),

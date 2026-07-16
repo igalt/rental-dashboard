@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
+import type { Page } from 'puppeteer';
 import { createClient } from '@supabase/supabase-js';
 import { findPossibleDuplicate } from '../src/lib/dedup/findPossibleDuplicate';
 
@@ -16,6 +17,35 @@ interface ScrapedListing {
   price: number | null;
   rooms: number | null;
   area: string | null;
+  image_url: string | null;
+  safe_room: boolean | null;
+}
+
+interface ListingDetails {
+  image_url: string | null;
+  safe_room: boolean | null;
+}
+
+// The feed page doesn't expose photos or the safe-room (ממ"ד) amenity — both only show up
+// on each listing's own detail page, so enrichment needs one extra visit per listing.
+// safe_room: true if the site marks the amenity present, false if the site explicitly marks
+// it absent (a real, disabled-styled entry still renders), null if the section isn't shown
+// at all for that listing (unknown, not stated either way).
+async function fetchListingDetails(page: Page, sourceRef: string): Promise<ListingDetails> {
+  const response = await page.goto(`https://www.yad2.co.il${sourceRef}`, { waitUntil: 'networkidle2' });
+  if (!response || response.status() === 404) return { image_url: null, safe_room: null };
+
+  return page.evaluate(() => {
+    const og = document.querySelector('meta[property="og:image"]');
+    const img = document.querySelector('img[src*="img.yad2"]') || document.querySelector('main img');
+    const raw = og?.getAttribute('content') ?? img?.getAttribute('src') ?? null;
+    const image_url = raw && !raw.includes('placeholder') ? raw.split('?')[0] : null;
+
+    const mamad = document.querySelector('[data-testid="security-room-item"]');
+    const safe_room = mamad ? !mamad.className.includes('disabled') : null;
+
+    return { image_url, safe_room };
+  });
 }
 
 async function scrapeYad2(): Promise<ScrapedListing[]> {
@@ -65,7 +95,16 @@ async function scrapeYad2(): Promise<ScrapedListing[]> {
         .filter((l): l is NonNullable<typeof l> => l !== null);
     });
 
-    return listings.filter((l) => l.source_ref);
+    const withRefs = listings.filter((l) => l.source_ref);
+
+    // Enrich each listing from its own detail page — the feed doesn't expose photos or the
+    // safe-room amenity at all, so this costs one extra page visit per listing.
+    const enriched: ScrapedListing[] = [];
+    for (const listing of withRefs) {
+      const details = await fetchListingDetails(page, listing.source_ref);
+      enriched.push({ ...listing, ...details });
+    }
+    return enriched;
   } finally {
     await browser.close();
   }
@@ -101,6 +140,8 @@ async function main() {
         price: listing.price,
         rooms: listing.rooms,
         area: listing.area,
+        image_url: listing.image_url,
+        safe_room: listing.safe_room,
         delisted_at: null,
         possible_duplicate_of: duplicateId,
         updated_at: new Date().toISOString(),

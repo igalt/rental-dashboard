@@ -2,6 +2,7 @@ export type Source = 'yad2' | 'facebook' | 'whatsapp' | 'manual';
 export type MatchStatus = 'matched' | 'unmatched' | 'unclear';
 export type RuleOperator = 'eq' | 'lt' | 'lte' | 'gt' | 'gte' | 'in';
 export type RuleField = 'price' | 'rooms' | 'area' | 'move_in_date';
+export type ListingStatus = 'new' | 'contacted' | 'seen';
 
 export interface Listing {
   id: string;
@@ -13,6 +14,9 @@ export interface Listing {
   area: string | null;
   move_in_date: string | null;
   raw_text: string | null;
+  image_url: string | null;
+  safe_room: boolean | null;
+  status: ListingStatus;
   extracted_at: string;
   favorited: boolean;
   irrelevant: boolean;
