@@ -9,6 +9,8 @@ export const defaultLLMCaller: LLMCaller = async (prompt) => {
     max_tokens: 500,
     messages: [{ role: 'user', content: prompt }],
   });
-  const block = message.content[0];
-  return block.type === 'text' ? block.text : '';
+  // Don't assume content[0] is the text block — extended-thinking responses put a
+  // `thinking` block first, so the real answer can be at a later index.
+  const block = message.content.find((b) => b.type === 'text');
+  return block ? block.text : '';
 };
