@@ -106,7 +106,7 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
               )}
               <button
                 onClick={() => setEditingTitle(true)}
-                className="font-mono text-xs text-ink-soft/40 hover:text-rust-dark transition-colors shrink-0"
+                className="flex items-center justify-center w-6 h-6 rounded-full border border-rule text-sm text-ink-soft bg-paper hover:border-rust hover:text-rust-dark hover:bg-rust/10 transition-colors shrink-0"
                 aria-label="Edit listing name"
                 title="Edit listing name"
               >
@@ -114,12 +114,13 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
               </button>
             </h3>
           )}
-          <p dir="auto" className="font-mono text-xs text-ink-soft mt-1.5 flex flex-wrap gap-x-2">
+          <p dir="auto" className="font-display text-base font-medium text-ink mt-1">
+            {listing.area ?? 'unknown area'}
+          </p>
+          <p dir="auto" className="font-mono text-xs text-ink-soft mt-1 flex flex-wrap gap-x-2">
             <span>₪{listing.price ?? '—'}</span>
             <span>·</span>
             <span>{listing.rooms ?? '—'} rooms</span>
-            <span>·</span>
-            <span>{listing.area ?? 'unknown area'}</span>
             {listing.safe_room !== null && (
               <>
                 <span>·</span>

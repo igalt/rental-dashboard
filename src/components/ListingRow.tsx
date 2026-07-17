@@ -32,15 +32,14 @@ export function ListingRow({ listing, selected, onSelect }: Props) {
         <div className="w-12 h-12 rounded-sm border border-rule shrink-0 bg-paper" />
       )}
       <div className="min-w-0 flex-1">
-        <p dir="auto" className={`font-display text-base leading-snug truncate ${selected ? 'text-paper' : 'text-ink'}`}>
+        <p dir="auto" className={`font-display text-sm leading-snug truncate ${selected ? 'text-paper/70' : 'text-ink-soft'}`}>
           {listing.title ?? 'Untitled listing'}
         </p>
-        <p dir="auto" className={`font-mono text-[11px] mt-0.5 flex flex-wrap gap-x-1.5 ${selected ? 'text-paper/70' : 'text-ink-soft'}`}>
-          <span>₪{listing.price ?? '—'}</span>
-          <span>·</span>
-          <span>{listing.rooms ?? '—'} rm</span>
-          <span>·</span>
-          <span className="truncate">{listing.area ?? 'unknown'}</span>
+        <p dir="auto" className={`font-display text-base font-medium leading-snug truncate ${selected ? 'text-paper' : 'text-ink'}`}>
+          {listing.area ?? 'unknown area'}
+        </p>
+        <p dir="auto" className={`font-mono text-[11px] mt-0.5 ${selected ? 'text-paper/70' : 'text-ink-soft'}`}>
+          ₪{listing.price ?? '—'} · {listing.rooms ?? '—'} rm
         </p>
       </div>
       {listing.possible_duplicate_of && (
