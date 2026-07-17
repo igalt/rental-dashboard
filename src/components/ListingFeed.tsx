@@ -58,6 +58,10 @@ export function ListingFeed() {
   const groups = useMemo(() => groupDuplicates(visibleListings), [visibleListings]);
   const selected = listings.find((l) => l.id === selectedId) ?? null;
 
+  function handleSelect(id: string) {
+    setSelectedId((prev) => (prev === id ? null : id));
+  }
+
   const detailRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (selectedId) detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -138,14 +142,14 @@ export function ListingFeed() {
                 </p>
                 {group.map((listing) => (
                   <div key={listing.id}>
-                    <ListingRow listing={listing} selected={listing.id === selectedId} onSelect={setSelectedId} />
+                    <ListingRow listing={listing} selected={listing.id === selectedId} onSelect={handleSelect} />
                     {renderInlineCard(listing)}
                   </div>
                 ))}
               </div>
             ) : (
               <div key={group[0].id}>
-                <ListingRow listing={group[0]} selected={group[0].id === selectedId} onSelect={setSelectedId} />
+                <ListingRow listing={group[0]} selected={group[0].id === selectedId} onSelect={handleSelect} />
                 {renderInlineCard(group[0])}
               </div>
             )
