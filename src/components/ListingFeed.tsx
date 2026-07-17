@@ -6,12 +6,29 @@ import { ListingCard } from './ListingCard';
 import { ListingRow } from './ListingRow';
 import { groupDuplicates } from '../lib/listings/groupDuplicates';
 
+// Matches the `xl:` breakpoint the layout grid below switches on — desktop keeps
+// the side-by-side sticky panel, everything narrower gets an inline-expanding row.
+const DESKTOP_QUERY = '(min-width: 1280px)';
+
+function useIsDesktop(): boolean {
+  const [isDesktop, setIsDesktop] = useState(true);
+  useEffect(() => {
+    const mq = window.matchMedia(DESKTOP_QUERY);
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return isDesktop;
+}
+
 export function ListingFeed() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [showDelisted, setShowDelisted] = useState(false);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const isDesktop = useIsDesktop();
 
   const refresh = useCallback(async () => {
     const response = await fetch(`/api/listings${showDelisted ? '?show_delisted=true' : ''}`);
@@ -43,11 +60,31 @@ export function ListingFeed() {
 
   const detailRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    // On narrow (single-column) layouts the detail panel renders after the whole
-    // list rather than beside it, so without this a tap on any row above the fold
-    // looks like it did nothing — the panel appears, just far off-screen below.
     if (selectedId) detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, [selectedId]);
+  }, [selectedId, isDesktop]);
+
+  function CloseButton() {
+    return (
+      <div className="flex justify-end mb-2">
+        <button
+          onClick={() => setSelectedId(null)}
+          className="font-mono text-xs uppercase tracking-wide text-ink-soft hover:text-rust-dark"
+        >
+          ✕ close
+        </button>
+      </div>
+    );
+  }
+
+  function renderInlineCard(listing: Listing) {
+    if (isDesktop || listing.id !== selectedId) return null;
+    return (
+      <div ref={detailRef} className="mt-2">
+        <CloseButton />
+        <ListingCard listing={listing} onUpdate={handleUpdate} onDuplicateAction={handleDuplicateAction} />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -100,25 +137,24 @@ export function ListingFeed() {
                   Possible duplicates ({group.length})
                 </p>
                 {group.map((listing) => (
-                  <ListingRow key={listing.id} listing={listing} selected={listing.id === selectedId} onSelect={setSelectedId} />
+                  <div key={listing.id}>
+                    <ListingRow listing={listing} selected={listing.id === selectedId} onSelect={setSelectedId} />
+                    {renderInlineCard(listing)}
+                  </div>
                 ))}
               </div>
             ) : (
-              <ListingRow key={group[0].id} listing={group[0]} selected={group[0].id === selectedId} onSelect={setSelectedId} />
+              <div key={group[0].id}>
+                <ListingRow listing={group[0]} selected={group[0].id === selectedId} onSelect={setSelectedId} />
+                {renderInlineCard(group[0])}
+              </div>
             )
           )}
         </div>
 
-        {selected && (
-          <div ref={detailRef} className="xl:sticky xl:top-10">
-            <div className="flex justify-end mb-2">
-              <button
-                onClick={() => setSelectedId(null)}
-                className="font-mono text-xs uppercase tracking-wide text-ink-soft hover:text-rust-dark"
-              >
-                ✕ close
-              </button>
-            </div>
+        {isDesktop && selected && (
+          <div className="xl:sticky xl:top-10">
+            <CloseButton />
             <ListingCard listing={selected} onUpdate={handleUpdate} onDuplicateAction={handleDuplicateAction} />
           </div>
         )}
