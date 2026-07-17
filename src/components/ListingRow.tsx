@@ -42,9 +42,16 @@ export function ListingRow({ listing, selected, onSelect }: Props) {
           ₪{listing.price ?? '—'} · {listing.rooms ?? '—'} rm
         </p>
       </div>
-      {listing.possible_duplicate_of && (
-        <span className="text-[10px] font-mono uppercase text-ochre shrink-0">dup?</span>
-      )}
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        {listing.listing_type === 'sublet' && (
+          <span className="text-[10px] font-mono uppercase tracking-wide bg-rust text-paper-raised rounded-full px-2 py-0.5">
+            Sublet
+          </span>
+        )}
+        {listing.possible_duplicate_of && (
+          <span className="text-[10px] font-mono uppercase text-ochre">dup?</span>
+        )}
+      </div>
     </button>
   );
 }

@@ -31,6 +31,7 @@ export async function quickAddListing(rawText: string): Promise<QuickAddResult> 
         rooms: extracted.rooms,
         area: extracted.area,
         move_in_date: extracted.move_in_date,
+        listing_type: extracted.listing_type,
         raw_text: rawText,
         possible_duplicate_of: duplicateId,
       })

@@ -1,20 +1,32 @@
 import { LLMCaller, defaultLLMCaller } from '../llm/client';
 
+export type ListingType = 'rental' | 'sublet';
+
 export interface ExtractedListing {
   title: string | null;
   price: number | null;
   rooms: number | null;
   area: string | null;
   move_in_date: string | null;
+  listing_type: ListingType;
 }
 
-const EMPTY: ExtractedListing = { title: null, price: null, rooms: null, area: null, move_in_date: null };
+const EMPTY: ExtractedListing = {
+  title: null,
+  price: null,
+  rooms: null,
+  area: null,
+  move_in_date: null,
+  listing_type: 'rental',
+};
 
 export async function extractListing(
   rawText: string,
   caller: LLMCaller = defaultLLMCaller
 ): Promise<ExtractedListing> {
-  const prompt = `Extract rental listing fields from the text below as strict JSON with keys title, price (number or null), rooms (number or null), area (string or null), move_in_date (YYYY-MM-DD string or null). Only return the JSON object, nothing else.
+  const prompt = `Extract rental listing fields from the text below as strict JSON with keys title, price (number or null), rooms (number or null), area (string or null), move_in_date (YYYY-MM-DD string or null), listing_type ("sublet" or "rental").
+
+Use "sublet" only when the text itself signals a temporary stay in someone else's home for a bounded period — explicit words like "סאבלט"/"sublet", a short fixed date range (e.g. a single month), or the poster describing their own apartment as available while they're away. Use "rental" for an ordinary open-ended lease, and as the default whenever the distinction isn't clearly stated. Only return the JSON object, nothing else.
 
 Text:
 ${rawText}`;
@@ -24,7 +36,9 @@ ${rawText}`;
   if (jsonText === null) return EMPTY;
 
   try {
-    return { ...EMPTY, ...JSON.parse(jsonText) };
+    const parsed = JSON.parse(jsonText);
+    if (parsed.listing_type !== 'sublet') parsed.listing_type = 'rental';
+    return { ...EMPTY, ...parsed };
   } catch {
     return EMPTY;
   }

@@ -76,9 +76,16 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
           />
         )}
         <div className="min-w-0 flex-1">
-          <span className="font-mono text-[11px] tracking-[0.15em] uppercase" style={{ color: accent }}>
-            {listing.source}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[11px] tracking-[0.15em] uppercase" style={{ color: accent }}>
+              {listing.source}
+            </span>
+            {listing.listing_type === 'sublet' && (
+              <span className="font-mono text-[10px] tracking-[0.15em] uppercase bg-rust text-paper-raised rounded-full px-2 py-0.5">
+                Sublet
+              </span>
+            )}
+          </div>
           {editingTitle ? (
             <input
               dir="auto"

@@ -10,6 +10,7 @@ function makeListing(overrides: Partial<Listing> & { id: string }): Listing {
     price: null,
     rooms: null,
     area: null,
+    listing_type: 'rental',
     move_in_date: null,
     move_in_immediate: null,
     raw_text: null,

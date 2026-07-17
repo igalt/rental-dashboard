@@ -87,6 +87,7 @@ export async function POST(request: NextRequest) {
         rooms: extracted.rooms,
         area: extracted.area,
         move_in_date: extracted.move_in_date,
+        listing_type: extracted.listing_type,
         raw_text: payload.raw_text,
         possible_duplicate_of: duplicateId,
       })

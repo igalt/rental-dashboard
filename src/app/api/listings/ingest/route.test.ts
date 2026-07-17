@@ -14,7 +14,7 @@ import { NextRequest } from 'next/server';
 beforeEach(() => {
   process.env.INGEST_API_KEY = 'test-key';
   vi.mocked(extractListing).mockResolvedValue({
-    title: 'Nice place', price: 5000, rooms: 3, area: 'Florentin', move_in_date: '2026-09-01',
+    title: 'Nice place', price: 5000, rooms: 3, area: 'Florentin', move_in_date: '2026-09-01', listing_type: 'rental',
   });
   vi.mocked(findPossibleDuplicate).mockResolvedValue(null);
 });
@@ -53,7 +53,23 @@ describe('POST /api/listings/ingest', () => {
     expect(response.status).toBe(200);
     expect(body.inserted).toHaveLength(1);
     expect(fake.builders.listings.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ source: 'whatsapp', title: 'Nice place', price: 5000 })
+      expect.objectContaining({ source: 'whatsapp', title: 'Nice place', price: 5000, listing_type: 'rental' })
+    );
+  });
+
+  it('persists a sublet classification from extraction', async () => {
+    const fake = createFakeSupabase({
+      listings: { data: { id: 'new-id' }, error: null },
+    });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+    vi.mocked(extractListing).mockResolvedValue({
+      title: 'August sublet', price: 3500, rooms: 2, area: 'Pardes Hana', move_in_date: '2026-08-03', listing_type: 'sublet',
+    });
+
+    await POST(makeRequest({ source: 'whatsapp', raw_text: 'sublet text here' }));
+
+    expect(fake.builders.listings.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ listing_type: 'sublet' })
     );
   });
 

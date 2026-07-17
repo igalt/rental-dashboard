@@ -44,6 +44,10 @@ alter table listings add column move_in_immediate boolean;
 -- convention as safe_room: null means the site doesn't show that amenity section at all.
 alter table listings add column floor text;
 alter table listings add column built_sqm numeric;
+-- 'sublet' = a temporary stay in someone else's home for a bounded period (short fixed date
+-- range, poster's own place while away); 'rental' = an ordinary open-ended lease, and the
+-- default whenever a source doesn't make the distinction (e.g. Yad2's rent-category search).
+alter table listings add column listing_type text not null default 'rental' check (listing_type in ('rental', 'sublet'));
 alter table listings add column condition text;
 alter table listings add column balcony boolean;
 alter table listings add column storage boolean;

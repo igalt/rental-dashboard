@@ -3,6 +3,7 @@ export type MatchStatus = 'matched' | 'unmatched' | 'unclear';
 export type RuleOperator = 'eq' | 'lt' | 'lte' | 'gt' | 'gte' | 'in';
 export type RuleField = 'price' | 'rooms' | 'area' | 'move_in_date';
 export type ListingStatus = 'new' | 'contacted' | 'seen';
+export type ListingType = 'rental' | 'sublet';
 
 export interface Listing {
   id: string;
@@ -12,6 +13,7 @@ export interface Listing {
   price: number | null;
   rooms: number | null;
   area: string | null;
+  listing_type: ListingType;
   move_in_date: string | null;
   move_in_immediate: boolean | null;
   raw_text: string | null;

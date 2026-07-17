@@ -13,7 +13,7 @@ import { quickAddListing } from './quickAddListing';
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(extractListing).mockResolvedValue({
-    title: 'Paste-added listing', price: 4500, rooms: 2, area: 'Center', move_in_date: null,
+    title: 'Paste-added listing', price: 4500, rooms: 2, area: 'Center', move_in_date: null, listing_type: 'rental',
   });
   vi.mocked(findPossibleDuplicate).mockResolvedValue(null);
 });
