@@ -22,7 +22,7 @@ export default function Home() {
 
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-8 items-start">
         <aside className="space-y-6 lg:sticky lg:top-10">
-          <FilterRuleBuilder />
+          <FilterRuleBuilder onRulesChanged={() => setFeedKey((k) => k + 1)} />
           <TagManager />
           <QuickAddBox onAdded={() => setFeedKey((k) => k + 1)} />
         </aside>

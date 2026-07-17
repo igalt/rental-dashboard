@@ -20,7 +20,7 @@ const FIELDS: RuleField[] = [
 ];
 const OPERATORS: RuleOperator[] = ['eq', 'lt', 'lte', 'gt', 'gte', 'in'];
 
-export function FilterRuleBuilder() {
+export function FilterRuleBuilder({ onRulesChanged }: { onRulesChanged?: () => void }) {
   const [rules, setRules] = useState<FilterRule[]>([]);
   const [field, setField] = useState<RuleField>('price');
   const [operator, setOperator] = useState<RuleOperator>('lt');
@@ -44,11 +44,13 @@ export function FilterRuleBuilder() {
     });
     setValue('');
     refresh();
+    onRulesChanged?.();
   }
 
   async function removeRule(id: string) {
     await fetch(`/api/filter-rules?id=${id}`, { method: 'DELETE' });
     refresh();
+    onRulesChanged?.();
   }
 
   return (
