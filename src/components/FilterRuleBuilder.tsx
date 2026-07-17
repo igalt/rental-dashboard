@@ -3,7 +3,21 @@
 import { useEffect, useState } from 'react';
 import type { FilterRule, RuleField, RuleOperator } from '../types/listing';
 
-const FIELDS: RuleField[] = ['price', 'rooms', 'area', 'move_in_date'];
+const FIELDS: RuleField[] = [
+  'price',
+  'rooms',
+  'area',
+  'move_in_date',
+  'listing_type',
+  'status',
+  'floor',
+  'built_sqm',
+  'condition',
+  'safe_room',
+  'balcony',
+  'storage',
+  'furnished',
+];
 const OPERATORS: RuleOperator[] = ['eq', 'lt', 'lte', 'gt', 'gte', 'in'];
 
 export function FilterRuleBuilder() {

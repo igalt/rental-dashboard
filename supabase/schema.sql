@@ -62,6 +62,12 @@ create table filter_rules (
   created_at timestamptz not null default now()
 );
 
+alter table filter_rules drop constraint filter_rules_field_check;
+alter table filter_rules add constraint filter_rules_field_check check (field in (
+  'price','rooms','area','move_in_date','listing_type','status','floor','built_sqm',
+  'condition','safe_room','balcony','storage','furnished'
+));
+
 create table tags (
   id uuid primary key default uuid_generate_v4(),
   label text not null unique,

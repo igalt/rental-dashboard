@@ -40,6 +40,18 @@ describe('/api/filter-rules', () => {
     expect(fake.builders.filter_rules.eq).toHaveBeenCalledWith('id', 'r1');
   });
 
+  it('POST accepts newer listing fields (listing_type, safe_room, etc.)', async () => {
+    const fake = createFakeSupabase({ filter_rules: { data: { id: 'r4' }, error: null } });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    const request = new NextRequest('http://localhost/api/filter-rules', {
+      method: 'POST',
+      body: JSON.stringify({ field: 'listing_type', operator: 'eq', value: 'rental', rule_group: 0 }),
+    });
+    const response = await POST(request);
+    expect(response.status).toBe(200);
+  });
+
   it('POST rejects a value containing parentheses (PostgREST filter injection)', async () => {
     const fake = createFakeSupabase({ filter_rules: { data: { id: 'r3' }, error: null } });
     vi.mocked(getServiceClient).mockReturnValue(fake as any);

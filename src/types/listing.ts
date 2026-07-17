@@ -1,7 +1,20 @@
 export type Source = 'yad2' | 'facebook' | 'whatsapp' | 'manual';
 export type MatchStatus = 'matched' | 'unmatched' | 'unclear';
 export type RuleOperator = 'eq' | 'lt' | 'lte' | 'gt' | 'gte' | 'in';
-export type RuleField = 'price' | 'rooms' | 'area' | 'move_in_date';
+export type RuleField =
+  | 'price'
+  | 'rooms'
+  | 'area'
+  | 'move_in_date'
+  | 'listing_type'
+  | 'status'
+  | 'floor'
+  | 'built_sqm'
+  | 'condition'
+  | 'safe_room'
+  | 'balcony'
+  | 'storage'
+  | 'furnished';
 export type ListingStatus = 'new' | 'contacted' | 'seen';
 export type ListingType = 'rental' | 'sublet';
 

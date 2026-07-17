@@ -7,7 +7,21 @@ import type { RuleField, RuleOperator } from '../../../types/listing';
 // route is only ever called by the dashboard's own UI, same as the other
 // internal CRUD routes (tags, listings feed/update, duplicate merge).
 
-const VALID_FIELDS: RuleField[] = ['price', 'rooms', 'area', 'move_in_date'];
+const VALID_FIELDS: RuleField[] = [
+  'price',
+  'rooms',
+  'area',
+  'move_in_date',
+  'listing_type',
+  'status',
+  'floor',
+  'built_sqm',
+  'condition',
+  'safe_room',
+  'balcony',
+  'storage',
+  'furnished',
+];
 const VALID_OPERATORS: RuleOperator[] = ['eq', 'lt', 'lte', 'gt', 'gte', 'in'];
 
 export async function GET() {
