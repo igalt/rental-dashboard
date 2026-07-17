@@ -155,6 +155,11 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
               </>
             )}
           </p>
+          {!url && listing.source_ref && (
+            <p dir="auto" className="font-mono text-xs text-ink-soft mt-1">
+              sent by {listing.source_ref} — search for this in the group to find the original message
+            </p>
+          )}
           {extraDetails.length > 0 && (
             <p dir="auto" className="font-mono text-xs text-ink-soft mt-1">
               {extraDetails.join(' · ')}
