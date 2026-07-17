@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import type { Listing } from '../types/listing';
 import { ListingCard } from './ListingCard';
 import { ListingRow } from './ListingRow';
@@ -40,6 +40,14 @@ export function ListingFeed() {
   );
   const groups = useMemo(() => groupDuplicates(visibleListings), [visibleListings]);
   const selected = listings.find((l) => l.id === selectedId) ?? null;
+
+  const detailRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    // On narrow (single-column) layouts the detail panel renders after the whole
+    // list rather than beside it, so without this a tap on any row above the fold
+    // looks like it did nothing — the panel appears, just far off-screen below.
+    if (selectedId) detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [selectedId]);
 
   return (
     <div>
@@ -102,7 +110,7 @@ export function ListingFeed() {
         </div>
 
         {selected && (
-          <div className="xl:sticky xl:top-10">
+          <div ref={detailRef} className="xl:sticky xl:top-10">
             <div className="flex justify-end mb-2">
               <button
                 onClick={() => setSelectedId(null)}
