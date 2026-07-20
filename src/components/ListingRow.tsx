@@ -73,19 +73,18 @@ export function ListingRow({ listing, selected, onSelect }: Props) {
             onClick={(e) => e.stopPropagation()}
             aria-label="View original ad"
             title="View original ad"
-            className={`font-mono text-sm font-medium ${selected ? 'text-paper/70 hover:text-paper' : 'text-rust hover:text-rust-dark'}`}
+            className="text-[10px] font-mono uppercase tracking-wide text-paper-raised rounded-full px-2 py-0.5 hover:opacity-80"
+            style={{ backgroundColor: accent }}
           >
-            view ↗
+            {listing.source} ↗
           </a>
         ) : (
-          (listing.source === 'whatsapp' || listing.source === 'facebook') && (
-            <span
-              className="text-[10px] font-mono uppercase tracking-wide text-paper-raised rounded-full px-2 py-0.5"
-              style={{ backgroundColor: accent }}
-            >
-              {listing.source}
-            </span>
-          )
+          <span
+            className="text-[10px] font-mono uppercase tracking-wide text-paper-raised rounded-full px-2 py-0.5"
+            style={{ backgroundColor: accent }}
+          >
+            {listing.source}
+          </span>
         )}
       </div>
     </button>
