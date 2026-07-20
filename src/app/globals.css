@@ -11,6 +11,7 @@
   --sage: #5c6b4f;
   --ochre: #a4762a;
   --indigo: #3d4a6b;
+  --yad2: #ff4809;
 
   --font-display: "Fraunces", serif;
   --font-body: "Archivo", sans-serif;
@@ -28,6 +29,7 @@
   --color-sage: var(--sage);
   --color-ochre: var(--ochre);
   --color-indigo: var(--indigo);
+  --color-yad2: var(--yad2);
   --font-display: var(--font-display);
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);

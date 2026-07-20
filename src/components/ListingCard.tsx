@@ -14,7 +14,7 @@ interface Props {
 const STATUSES: ListingStatus[] = ['new', 'contacted', 'seen'];
 
 const SOURCE_ACCENT: Record<Listing['source'], string> = {
-  yad2: 'var(--rust)',
+  yad2: 'var(--yad2)',
   facebook: 'var(--indigo)',
   whatsapp: 'var(--sage)',
   manual: 'var(--ochre)',
