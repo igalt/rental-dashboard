@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { Listing, ListingStatus } from '../types/listing';
 import { isNewListing } from '../lib/listings/isNewListing';
+import { getListingUrl } from '../lib/listings/getListingUrl';
 
 interface Props {
   listing: Listing;
@@ -17,13 +18,6 @@ const SOURCE_ACCENT: Record<Listing['source'], string> = {
   whatsapp: 'var(--sage)',
   manual: 'var(--ochre)',
 };
-
-function getListingUrl(listing: Listing): string | null {
-  if (!listing.source_ref) return null;
-  if (/^https?:\/\//.test(listing.source_ref)) return listing.source_ref;
-  if (listing.source === 'yad2') return `https://www.yad2.co.il${listing.source_ref}`;
-  return null;
-}
 
 function formatMoveInDate(dateStr: string): string {
   const [year, month, day] = dateStr.split('-');

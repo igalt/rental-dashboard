@@ -2,6 +2,7 @@
 
 import type { Listing } from '../types/listing';
 import { isNewListing } from '../lib/listings/isNewListing';
+import { getListingUrl } from '../lib/listings/getListingUrl';
 
 interface Props {
   listing: Listing;
@@ -18,6 +19,7 @@ const SOURCE_ACCENT: Record<Listing['source'], string> = {
 
 export function ListingRow({ listing, selected, onSelect }: Props) {
   const accent = SOURCE_ACCENT[listing.source];
+  const url = getListingUrl(listing);
 
   return (
     <button
@@ -60,6 +62,19 @@ export function ListingRow({ listing, selected, onSelect }: Props) {
           <span className="text-[10px] font-mono uppercase tracking-wide bg-rust text-paper-raised rounded-full px-2 py-0.5">
             Sublet
           </span>
+        )}
+        {url && (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            aria-label="View original ad"
+            title="View original ad"
+            className={`font-mono text-[11px] ${selected ? 'text-paper/70 hover:text-paper' : 'text-rust hover:text-rust-dark'}`}
+          >
+            view ↗
+          </a>
         )}
       </div>
     </button>
