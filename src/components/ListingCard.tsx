@@ -108,7 +108,12 @@ export function ListingCard({ listing, onUpdate }: Props) {
               }}
             />
           ) : (
-            <h3 dir="auto" className="font-display text-xl leading-snug text-ink mt-0.5 flex items-center gap-2 group">
+            <h3
+              dir="auto"
+              className={`font-display text-xl leading-snug mt-0.5 flex items-center gap-2 group ${
+                listing.title_edited ? 'text-rust-dark font-semibold' : 'text-indigo font-medium'
+              }`}
+            >
               {url ? (
                 <a href={url} target="_blank" rel="noopener noreferrer" className="hover:text-rust-dark underline decoration-rule underline-offset-4">
                   {listing.title ?? 'Untitled listing'}
@@ -126,7 +131,7 @@ export function ListingCard({ listing, onUpdate }: Props) {
               </button>
             </h3>
           )}
-          <p dir="auto" className="font-display text-base font-medium text-ink mt-1">
+          <p dir="auto" className="font-display text-xl font-medium text-ink mt-1">
             {listing.area ?? 'unknown area'}
           </p>
           <p dir="auto" className="font-mono text-xs text-ink-soft mt-1 flex flex-wrap gap-x-2">

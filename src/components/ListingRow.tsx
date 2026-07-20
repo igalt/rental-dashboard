@@ -33,7 +33,14 @@ export function ListingRow({ listing, selected, onSelect }: Props) {
         <div className="w-12 h-12 rounded-sm border border-rule shrink-0 bg-paper" />
       )}
       <div className="min-w-0 flex-1">
-        <p dir="auto" className={`font-display text-sm leading-snug truncate ${selected ? 'text-paper/70' : 'text-ink-soft'}`}>
+        <p
+          dir="auto"
+          className={`font-display text-base leading-snug truncate ${
+            selected
+              ? listing.title_edited ? 'text-paper font-semibold' : 'text-paper/80'
+              : listing.title_edited ? 'text-rust-dark font-semibold' : 'text-indigo font-medium'
+          }`}
+        >
           {listing.title ?? 'Untitled listing'}
         </p>
         <p dir="auto" className={`font-display text-base font-medium leading-snug truncate ${selected ? 'text-paper' : 'text-ink'}`}>

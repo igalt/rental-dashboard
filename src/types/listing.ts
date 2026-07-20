@@ -23,6 +23,7 @@ export interface Listing {
   source: Source;
   source_ref: string | null;
   title: string | null;
+  title_edited: boolean;
   price: number | null;
   rooms: number | null;
   area: string | null;

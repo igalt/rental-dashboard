@@ -91,7 +91,7 @@ describe('PATCH /api/listings/[id]', () => {
     );
   });
 
-  it('updates title', async () => {
+  it('updates title and flags it as manually edited', async () => {
     const fake = createFakeSupabase({ listings: { data: { id: 'l1', title: 'Renamed listing' }, error: null } });
     vi.mocked(getServiceClient).mockReturnValue(fake as any);
 
@@ -105,7 +105,7 @@ describe('PATCH /api/listings/[id]', () => {
     expect(response.status).toBe(200);
     expect(body.listing.title).toBe('Renamed listing');
     expect(fake.builders.listings.update).toHaveBeenCalledWith(
-      expect.objectContaining({ title: 'Renamed listing' })
+      expect.objectContaining({ title: 'Renamed listing', title_edited: true })
     );
   });
 

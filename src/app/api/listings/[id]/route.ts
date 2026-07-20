@@ -46,6 +46,10 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     return NextResponse.json({ error: 'no valid fields to update' }, { status: 400 });
   }
 
+  // A title PATCH only ever comes from the card's rename pencil — flag it so the UI can
+  // give a manually-chosen name more visual weight than the source's original title.
+  if ('title' in update) update.title_edited = true;
+
   update.updated_at = new Date().toISOString();
 
   const supabase = getServiceClient();

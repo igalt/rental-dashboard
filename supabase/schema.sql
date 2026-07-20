@@ -96,3 +96,7 @@ create policy "public read listing_tags" on listing_tags for select using (true)
 -- unrelated listings as duplicates to be useful. Duplicates are now handled manually
 -- (mark one irrelevant) instead of via an automated flag + merge/dismiss UI.
 alter table listings drop column possible_duplicate_of;
+
+-- true once a human has renamed the listing via the card's edit pencil, so the UI can
+-- give a deliberately-chosen name more visual weight than the source's original title.
+alter table listings add column title_edited boolean not null default false;
