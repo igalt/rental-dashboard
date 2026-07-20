@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
         area: extracted.area,
         move_in_date: extracted.move_in_date,
         listing_type: extracted.listing_type,
+        safe_room: extracted.safe_room,
         raw_text: payload.raw_text,
       })
       .select()

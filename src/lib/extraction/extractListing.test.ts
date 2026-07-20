@@ -11,6 +11,7 @@ describe('extractListing', () => {
         area: 'Florentin, Tel Aviv',
         move_in_date: '2026-09-01',
         listing_type: 'rental',
+        safe_room: true,
       });
 
     const result = await extractListing('some raw whatsapp text', fakeCaller);
@@ -22,7 +23,24 @@ describe('extractListing', () => {
       area: 'Florentin, Tel Aviv',
       move_in_date: '2026-09-01',
       listing_type: 'rental',
+      safe_room: true,
     });
+  });
+
+  it('extracts safe_room as false when the text explicitly says there is none', async () => {
+    const fakeCaller = async () =>
+      JSON.stringify({
+        title: 'House in Pardes Hana',
+        price: 8200,
+        rooms: null,
+        area: 'Pardes Hana',
+        move_in_date: null,
+        listing_type: 'rental',
+        safe_room: false,
+      });
+
+    const result = await extractListing('להשכרה בית בפרדס חנה. ללא ממ"ד.', fakeCaller);
+    expect(result.safe_room).toBe(false);
   });
 
   it('preserves a sublet classification from the LLM caller', async () => {
@@ -56,6 +74,7 @@ describe('extractListing', () => {
       area: null,
       move_in_date: null,
       listing_type: 'rental',
+      safe_room: null,
     });
   });
 
@@ -86,6 +105,7 @@ describe('extractListing', () => {
       area: 'Florentin',
       move_in_date: '2026-08-01',
       listing_type: 'rental',
+      safe_room: null,
     });
   });
 
@@ -99,6 +119,7 @@ describe('extractListing', () => {
       area: null,
       move_in_date: null,
       listing_type: 'rental',
+      safe_room: null,
     });
   });
 });

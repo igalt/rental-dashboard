@@ -72,9 +72,6 @@ export function ListingCard({ listing, onUpdate }: Props) {
         )}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-[11px] tracking-[0.15em] uppercase" style={{ color: accent }}>
-              {listing.source}
-            </span>
             {isNewListing(listing.extracted_at) && (
               <span className="font-mono text-[10px] tracking-[0.15em] uppercase bg-sage text-paper-raised rounded-full px-2 py-0.5">
                 New
@@ -151,13 +148,24 @@ export function ListingCard({ listing, onUpdate }: Props) {
                 <span>immediate entrance</span>
               </>
             )}
-            {url && (
-              <>
-                <span>·</span>
-                <a href={url} target="_blank" rel="noopener noreferrer" className="text-rust hover:text-rust-dark">
-                  view original ↗
-                </a>
-              </>
+            <span>·</span>
+            {url ? (
+              <a
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-mono text-[10px] uppercase tracking-wide text-paper-raised rounded-full px-2 py-0.5 hover:opacity-80"
+                style={{ backgroundColor: accent }}
+              >
+                {listing.source} ↗
+              </a>
+            ) : (
+              <span
+                className="font-mono text-[10px] uppercase tracking-wide text-paper-raised rounded-full px-2 py-0.5"
+                style={{ backgroundColor: accent }}
+              >
+                {listing.source}
+              </span>
             )}
           </p>
           {!url && listing.source_ref && (

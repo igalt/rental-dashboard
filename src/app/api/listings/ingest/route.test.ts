@@ -12,7 +12,7 @@ import { NextRequest } from 'next/server';
 beforeEach(() => {
   process.env.INGEST_API_KEY = 'test-key';
   vi.mocked(extractListing).mockResolvedValue({
-    title: 'Nice place', price: 5000, rooms: 3, area: 'Florentin', move_in_date: '2026-09-01', listing_type: 'rental',
+    title: 'Nice place', price: 5000, rooms: 3, area: 'Florentin', move_in_date: '2026-09-01', listing_type: 'rental', safe_room: null,
   });
 });
 
@@ -83,7 +83,7 @@ describe('POST /api/listings/ingest', () => {
     });
     vi.mocked(getServiceClient).mockReturnValue(fake as any);
     vi.mocked(extractListing).mockResolvedValue({
-      title: 'August sublet', price: 3500, rooms: 2, area: 'Pardes Hana', move_in_date: '2026-08-03', listing_type: 'sublet',
+      title: 'August sublet', price: 3500, rooms: 2, area: 'Pardes Hana', move_in_date: '2026-08-03', listing_type: 'sublet', safe_room: null,
     });
 
     await POST(makeRequest({ source: 'whatsapp', raw_text: 'sublet text here' }));
