@@ -54,6 +54,29 @@ describe('POST /api/listings/ingest', () => {
     );
   });
 
+  it('persists source_group and locate_hint for group-based sources', async () => {
+    const fake = createFakeSupabase({
+      listings: { data: { id: 'new-id' }, error: null },
+    });
+    vi.mocked(getServiceClient).mockReturnValue(fake as any);
+
+    await POST(
+      makeRequest({
+        source: 'whatsapp',
+        raw_text: 'raw text here',
+        source_group: 'דירות וסאבלטים פר"ח כרכור',
+        locate_hint: 'דרוש שותף לדירה גדולה',
+      })
+    );
+
+    expect(fake.builders.listings.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source_group: 'דירות וסאבלטים פר"ח כרכור',
+        locate_hint: 'דרוש שותף לדירה גדולה',
+      })
+    );
+  });
+
   it('persists a sublet classification from extraction', async () => {
     const fake = createFakeSupabase({
       listings: { data: { id: 'new-id' }, error: null },

@@ -100,3 +100,10 @@ alter table listings drop column possible_duplicate_of;
 -- true once a human has renamed the listing via the card's edit pencil, so the UI can
 -- give a deliberately-chosen name more visual weight than the source's original title.
 alter table listings add column title_edited boolean not null default false;
+
+-- WhatsApp/Facebook groups have no real message permalink, so relocating the original post
+-- means manually reopening the group and searching. source_group holds the group/page name
+-- and locate_hint a short distinctive snippet of the post text — both meant to be copy-pasted
+-- straight into that group's own search box. Null for sources that don't need this (yad2, manual).
+alter table listings add column source_group text;
+alter table listings add column locate_hint text;

@@ -65,7 +65,7 @@ export function ListingRow({ listing, selected, onSelect }: Props) {
             </span>
           )}
         </div>
-        {url && (
+        {url ? (
           <a
             href={url}
             target="_blank"
@@ -77,6 +77,15 @@ export function ListingRow({ listing, selected, onSelect }: Props) {
           >
             view ↗
           </a>
+        ) : (
+          (listing.source === 'whatsapp' || listing.source === 'facebook') && (
+            <span
+              className="text-[10px] font-mono uppercase tracking-wide text-paper-raised rounded-full px-2 py-0.5"
+              style={{ backgroundColor: accent }}
+            >
+              {listing.source}
+            </span>
+          )
         )}
       </div>
     </button>

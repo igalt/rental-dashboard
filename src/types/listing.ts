@@ -22,6 +22,8 @@ export interface Listing {
   id: string;
   source: Source;
   source_ref: string | null;
+  source_group: string | null;
+  locate_hint: string | null;
   title: string | null;
   title_edited: boolean;
   price: number | null;

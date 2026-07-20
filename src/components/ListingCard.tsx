@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import type { Listing, ListingStatus } from '../types/listing';
 import { isNewListing } from '../lib/listings/isNewListing';
 import { getListingUrl } from '../lib/listings/getListingUrl';
+import { CopyField } from './CopyField';
 
 interface Props {
   listing: Listing;
@@ -161,8 +162,14 @@ export function ListingCard({ listing, onUpdate }: Props) {
           </p>
           {!url && listing.source_ref && (
             <p dir="auto" className="font-mono text-xs text-ink-soft mt-1">
-              sent by {listing.source_ref} — search for this in the group to find the original message
+              posted by {listing.source_ref}
             </p>
+          )}
+          {!url && (listing.source_group || listing.locate_hint) && (
+            <div className="mt-2 space-y-1.5">
+              {listing.source_group && <CopyField label="Group" value={listing.source_group} />}
+              {listing.locate_hint && <CopyField label="Search for" value={listing.locate_hint} />}
+            </div>
           )}
           {extraDetails.length > 0 && (
             <p dir="auto" className="font-mono text-xs text-ink-soft mt-1">

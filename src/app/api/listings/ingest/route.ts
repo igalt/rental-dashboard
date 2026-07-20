@@ -6,6 +6,8 @@ interface IngestPayload {
   source: 'facebook' | 'whatsapp' | 'manual';
   raw_text: string;
   source_ref?: string;
+  source_group?: string;
+  locate_hint?: string;
 }
 
 const ALLOWED_SOURCES = ['facebook', 'whatsapp', 'manual'];
@@ -76,6 +78,8 @@ export async function POST(request: NextRequest) {
       .insert({
         source: payload.source,
         source_ref: payload.source_ref ?? null,
+        source_group: payload.source_group ?? null,
+        locate_hint: payload.locate_hint ?? null,
         title: extracted.title,
         price: extracted.price,
         rooms: extracted.rooms,
