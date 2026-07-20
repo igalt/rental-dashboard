@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { Listing, ListingStatus } from '../types/listing';
+import { isNewListing } from '../lib/listings/isNewListing';
 
 interface Props {
   listing: Listing;
@@ -80,6 +81,11 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
             <span className="font-mono text-[11px] tracking-[0.15em] uppercase" style={{ color: accent }}>
               {listing.source}
             </span>
+            {isNewListing(listing.extracted_at) && (
+              <span className="font-mono text-[10px] tracking-[0.15em] uppercase bg-sage text-paper-raised rounded-full px-2 py-0.5">
+                New
+              </span>
+            )}
             {listing.listing_type === 'sublet' && (
               <span className="font-mono text-[10px] tracking-[0.15em] uppercase bg-rust text-paper-raised rounded-full px-2 py-0.5">
                 Sublet

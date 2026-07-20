@@ -1,6 +1,7 @@
 'use client';
 
 import type { Listing } from '../types/listing';
+import { isNewListing } from '../lib/listings/isNewListing';
 
 interface Props {
   listing: Listing;
@@ -43,6 +44,11 @@ export function ListingRow({ listing, selected, onSelect }: Props) {
         </p>
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
+        {isNewListing(listing.extracted_at) && (
+          <span className="text-[10px] font-mono uppercase tracking-wide bg-sage text-paper-raised rounded-full px-2 py-0.5">
+            New
+          </span>
+        )}
         {listing.listing_type === 'sublet' && (
           <span className="text-[10px] font-mono uppercase tracking-wide bg-rust text-paper-raised rounded-full px-2 py-0.5">
             Sublet
