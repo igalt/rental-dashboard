@@ -91,3 +91,8 @@ create policy "public read listings" on listings for select using (true);
 create policy "public read filter_rules" on filter_rules for select using (true);
 create policy "public read tags" on tags for select using (true);
 create policy "public read listing_tags" on listing_tags for select using (true);
+
+-- Possible-duplicate detection was removed: price/rooms/area matching flagged too many
+-- unrelated listings as duplicates to be useful. Duplicates are now handled manually
+-- (mark one irrelevant) instead of via an automated flag + merge/dismiss UI.
+alter table listings drop column possible_duplicate_of;

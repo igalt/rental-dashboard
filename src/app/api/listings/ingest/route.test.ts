@@ -2,11 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../../../lib/supabase/server', () => ({ getServiceClient: vi.fn() }));
 vi.mock('../../../../lib/extraction/extractListing', () => ({ extractListing: vi.fn() }));
-vi.mock('../../../../lib/dedup/findPossibleDuplicate', () => ({ findPossibleDuplicate: vi.fn() }));
 
 import { getServiceClient } from '../../../../lib/supabase/server';
 import { extractListing } from '../../../../lib/extraction/extractListing';
-import { findPossibleDuplicate } from '../../../../lib/dedup/findPossibleDuplicate';
 import { createFakeSupabase } from '../../../../lib/supabase/testUtils';
 import { POST } from './route';
 import { NextRequest } from 'next/server';
@@ -16,7 +14,6 @@ beforeEach(() => {
   vi.mocked(extractListing).mockResolvedValue({
     title: 'Nice place', price: 5000, rooms: 3, area: 'Florentin', move_in_date: '2026-09-01', listing_type: 'rental',
   });
-  vi.mocked(findPossibleDuplicate).mockResolvedValue(null);
 });
 
 function makeRequest(body: unknown, authorized = true) {
@@ -41,7 +38,7 @@ describe('POST /api/listings/ingest', () => {
     expect(response.status).toBe(401);
   });
 
-  it('extracts, dedups, and inserts a listing', async () => {
+  it('extracts and inserts a listing', async () => {
     const fake = createFakeSupabase({
       listings: { data: { id: 'new-id' }, error: null },
     });

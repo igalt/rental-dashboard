@@ -7,7 +7,6 @@ import { isNewListing } from '../lib/listings/isNewListing';
 interface Props {
   listing: Listing;
   onUpdate: (id: string, patch: Partial<Pick<Listing, 'favorited' | 'irrelevant' | 'notes' | 'status' | 'title'>>) => void;
-  onDuplicateAction: (id: string, action: 'merge' | 'dismiss') => void;
 }
 
 const STATUSES: ListingStatus[] = ['new', 'contacted', 'seen'];
@@ -31,7 +30,7 @@ function formatMoveInDate(dateStr: string): string {
   return `${day}/${month}/${year}`;
 }
 
-export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
+export function ListingCard({ listing, onUpdate }: Props) {
   const [notes, setNotes] = useState(listing.notes ?? '');
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(listing.title ?? '');
@@ -186,26 +185,6 @@ export function ListingCard({ listing, onUpdate, onDuplicateAction }: Props) {
           </summary>
           <p dir="auto" className="mt-2 text-ink whitespace-pre-wrap">{listing.raw_text}</p>
         </details>
-      )}
-
-      {listing.possible_duplicate_of && (
-        <div className="bg-ochre/10 border border-ochre/40 rounded-sm p-2.5 text-sm flex justify-between items-center gap-2">
-          <span className="text-ink">Possible duplicate — confirm?</span>
-          <div className="flex gap-1.5 shrink-0">
-            <button
-              className="px-2 py-1 rounded-sm bg-ochre text-paper-raised text-xs font-mono uppercase hover:brightness-95 transition-all"
-              onClick={() => onDuplicateAction(listing.id, 'merge')}
-            >
-              Merge
-            </button>
-            <button
-              className="px-2 py-1 rounded-sm border border-ochre/50 text-xs font-mono uppercase text-ink hover:bg-ochre/10 transition-colors"
-              onClick={() => onDuplicateAction(listing.id, 'dismiss')}
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
       )}
 
       <div className="flex gap-1.5">

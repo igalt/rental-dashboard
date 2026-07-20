@@ -54,9 +54,6 @@ export function ListingRow({ listing, selected, onSelect }: Props) {
             Sublet
           </span>
         )}
-        {listing.possible_duplicate_of && (
-          <span className="text-[10px] font-mono uppercase text-ochre">dup?</span>
-        )}
       </div>
     </button>
   );

@@ -4,7 +4,6 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import type { Listing } from '../types/listing';
 import { ListingCard } from './ListingCard';
 import { ListingRow } from './ListingRow';
-import { groupDuplicates } from '../lib/listings/groupDuplicates';
 
 // Matches the `xl:` breakpoint the layout grid below switches on — desktop keeps
 // the side-by-side sticky panel, everything narrower gets an inline-expanding row.
@@ -46,16 +45,10 @@ export function ListingFeed() {
     refresh();
   }
 
-  async function handleDuplicateAction(id: string, action: 'merge' | 'dismiss') {
-    await fetch(`/api/listings/${id}/duplicate`, { method: 'POST', body: JSON.stringify({ action }) });
-    refresh();
-  }
-
   const visibleListings = useMemo(
     () => (favoritesOnly ? listings.filter((l) => l.favorited) : listings),
     [listings, favoritesOnly]
   );
-  const groups = useMemo(() => groupDuplicates(visibleListings), [visibleListings]);
   const selected = listings.find((l) => l.id === selectedId) ?? null;
 
   function handleSelect(id: string) {
@@ -85,7 +78,7 @@ export function ListingFeed() {
     return (
       <div ref={detailRef} className="mt-2">
         <CloseButton />
-        <ListingCard listing={listing} onUpdate={handleUpdate} onDuplicateAction={handleDuplicateAction} />
+        <ListingCard listing={listing} onUpdate={handleUpdate} />
       </div>
     );
   }
@@ -131,35 +124,18 @@ export function ListingFeed() {
       )}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
         <div className="space-y-3">
-          {groups.map((group) =>
-            group.length > 1 ? (
-              <div
-                key={group[0].id}
-                className="rounded-sm border-2 border-dashed border-ochre/50 bg-ochre/5 p-2 space-y-2"
-              >
-                <p className="font-mono text-[10px] tracking-[0.15em] uppercase text-ochre px-1">
-                  Possible duplicates ({group.length})
-                </p>
-                {group.map((listing) => (
-                  <div key={listing.id}>
-                    <ListingRow listing={listing} selected={listing.id === selectedId} onSelect={handleSelect} />
-                    {renderInlineCard(listing)}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div key={group[0].id}>
-                <ListingRow listing={group[0]} selected={group[0].id === selectedId} onSelect={handleSelect} />
-                {renderInlineCard(group[0])}
-              </div>
-            )
-          )}
+          {visibleListings.map((listing) => (
+            <div key={listing.id}>
+              <ListingRow listing={listing} selected={listing.id === selectedId} onSelect={handleSelect} />
+              {renderInlineCard(listing)}
+            </div>
+          ))}
         </div>
 
         {isDesktop && selected && (
           <div className="xl:sticky xl:top-10">
             <CloseButton />
-            <ListingCard listing={selected} onUpdate={handleUpdate} onDuplicateAction={handleDuplicateAction} />
+            <ListingCard listing={selected} onUpdate={handleUpdate} />
           </div>
         )}
       </div>

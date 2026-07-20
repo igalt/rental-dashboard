@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '../../../../lib/supabase/server';
 import { extractListing } from '../../../../lib/extraction/extractListing';
-import { findPossibleDuplicate } from '../../../../lib/dedup/findPossibleDuplicate';
 
 interface IngestPayload {
   source: 'facebook' | 'whatsapp' | 'manual';
@@ -71,11 +70,6 @@ export async function POST(request: NextRequest) {
   // should currently send one payload per request.
   for (const payload of payloads) {
     const extracted = await extractListing(payload.raw_text);
-    const duplicateId = await findPossibleDuplicate(supabase, {
-      price: extracted.price,
-      rooms: extracted.rooms,
-      area: extracted.area,
-    });
 
     const { data, error } = await supabase
       .from('listings')
@@ -89,7 +83,6 @@ export async function POST(request: NextRequest) {
         move_in_date: extracted.move_in_date,
         listing_type: extracted.listing_type,
         raw_text: payload.raw_text,
-        possible_duplicate_of: duplicateId,
       })
       .select()
       .single();

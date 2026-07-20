@@ -43,7 +43,6 @@ export interface Listing {
   favorited: boolean;
   irrelevant: boolean;
   notes: string | null;
-  possible_duplicate_of: string | null;
   delisted_at: string | null;
   updated_at: string;
 }

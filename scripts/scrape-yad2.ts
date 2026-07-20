@@ -2,7 +2,6 @@ import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import type { Page } from 'puppeteer';
 import { createClient } from '@supabase/supabase-js';
-import { findPossibleDuplicate } from '../src/lib/dedup/findPossibleDuplicate';
 
 puppeteer.use(StealthPlugin());
 
@@ -178,22 +177,6 @@ async function main() {
   console.log(`Scraped ${scraped.length} listings from Yad2`);
 
   for (const listing of scraped) {
-    // Look up whether this exact Yad2 listing already exists, so the dedup check below
-    // excludes it from matching against itself (it will always have the same price/rooms/area).
-    const { data: existing } = await supabase
-      .from('listings')
-      .select('id')
-      .eq('source', 'yad2')
-      .eq('source_ref', listing.source_ref)
-      .maybeSingle();
-    const existingId = (existing as { id: string } | null)?.id;
-
-    const duplicateId = await findPossibleDuplicate(
-      supabase,
-      { price: listing.price, rooms: listing.rooms, area: listing.area },
-      existingId
-    );
-
     await supabase.from('listings').upsert(
       {
         source: 'yad2',
@@ -213,7 +196,6 @@ async function main() {
         storage: listing.storage,
         furnished: listing.furnished,
         delisted_at: null,
-        possible_duplicate_of: duplicateId,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'source,source_ref' }

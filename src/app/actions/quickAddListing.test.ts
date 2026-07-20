@@ -2,11 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../lib/supabase/server', () => ({ getServiceClient: vi.fn() }));
 vi.mock('../../lib/extraction/extractListing', () => ({ extractListing: vi.fn() }));
-vi.mock('../../lib/dedup/findPossibleDuplicate', () => ({ findPossibleDuplicate: vi.fn() }));
 
 import { getServiceClient } from '../../lib/supabase/server';
 import { extractListing } from '../../lib/extraction/extractListing';
-import { findPossibleDuplicate } from '../../lib/dedup/findPossibleDuplicate';
 import { createFakeSupabase } from '../../lib/supabase/testUtils';
 import { quickAddListing } from './quickAddListing';
 
@@ -15,11 +13,10 @@ beforeEach(() => {
   vi.mocked(extractListing).mockResolvedValue({
     title: 'Paste-added listing', price: 4500, rooms: 2, area: 'Center', move_in_date: null, listing_type: 'rental',
   });
-  vi.mocked(findPossibleDuplicate).mockResolvedValue(null);
 });
 
 describe('quickAddListing', () => {
-  it('extracts, dedups, and inserts a manual listing directly (no HTTP round-trip)', async () => {
+  it('extracts and inserts a manual listing directly (no HTTP round-trip)', async () => {
     const fake = createFakeSupabase({ listings: { data: { id: 'new-id' }, error: null } });
     vi.mocked(getServiceClient).mockReturnValue(fake as any);
 
@@ -60,20 +57,6 @@ describe('quickAddListing', () => {
     const fake = createFakeSupabase({ listings: { data: { id: 'new-id' }, error: null } });
     vi.mocked(getServiceClient).mockReturnValue(fake as any);
     vi.mocked(extractListing).mockRejectedValue(new Error('LLM API request failed'));
-
-    const result = await quickAddListing('some pasted facebook post text');
-
-    expect(result).toEqual({ ok: false, error: 'failed to add listing' });
-    expect(consoleSpy).toHaveBeenCalledWith('Quick-add failed:', expect.any(Error));
-
-    consoleSpy.mockRestore();
-  });
-
-  it('returns a generic error instead of throwing when dedup lookup fails', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const fake = createFakeSupabase({ listings: { data: { id: 'new-id' }, error: null } });
-    vi.mocked(getServiceClient).mockReturnValue(fake as any);
-    vi.mocked(findPossibleDuplicate).mockRejectedValue(new Error('db error'));
 
     const result = await quickAddListing('some pasted facebook post text');
 

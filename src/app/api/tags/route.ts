@@ -4,7 +4,7 @@ import { getServiceClient } from '../../../lib/supabase/server';
 // Intentionally no auth check here: the dashboard is a login-free, two-person
 // household tool reachable via a plain URL (explicit design decision). This
 // route is only ever called by the dashboard's own UI, same as the other
-// internal CRUD routes (filter-rules, listings feed/update, duplicate merge).
+// internal CRUD routes (filter-rules, listings feed/update).
 
 export async function GET() {
   const supabase = getServiceClient();

@@ -6,7 +6,7 @@ import type { FilterRule } from '../../../types/listing';
 // Intentionally no auth check here: the dashboard is a login-free, two-person
 // household tool reachable via a plain URL (explicit design decision). This
 // route is only ever called by the dashboard's own UI, same as the other
-// internal CRUD routes (filter-rules, tags, duplicate merge).
+// internal CRUD routes (filter-rules, tags).
 
 export async function GET(request: NextRequest) {
   const showDelisted = request.nextUrl.searchParams.get('show_delisted') === 'true';

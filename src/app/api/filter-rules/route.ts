@@ -5,7 +5,7 @@ import type { RuleField, RuleOperator } from '../../../types/listing';
 // Intentionally no auth check here: the dashboard is a login-free, two-person
 // household tool reachable via a plain URL (explicit design decision). This
 // route is only ever called by the dashboard's own UI, same as the other
-// internal CRUD routes (tags, listings feed/update, duplicate merge).
+// internal CRUD routes (tags, listings feed/update).
 
 const VALID_FIELDS: RuleField[] = [
   'price',

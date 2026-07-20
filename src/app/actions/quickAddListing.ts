@@ -2,7 +2,6 @@
 
 import { getServiceClient } from '../../lib/supabase/server';
 import { extractListing } from '../../lib/extraction/extractListing';
-import { findPossibleDuplicate } from '../../lib/dedup/findPossibleDuplicate';
 
 type QuickAddResult =
   | { ok: true; listing: unknown }
@@ -16,11 +15,6 @@ export async function quickAddListing(rawText: string): Promise<QuickAddResult> 
   try {
     const supabase = getServiceClient();
     const extracted = await extractListing(rawText);
-    const duplicateId = await findPossibleDuplicate(supabase, {
-      price: extracted.price,
-      rooms: extracted.rooms,
-      area: extracted.area,
-    });
 
     const { data, error } = await supabase
       .from('listings')
@@ -33,7 +27,6 @@ export async function quickAddListing(rawText: string): Promise<QuickAddResult> 
         move_in_date: extracted.move_in_date,
         listing_type: extracted.listing_type,
         raw_text: rawText,
-        possible_duplicate_of: duplicateId,
       })
       .select()
       .single();
