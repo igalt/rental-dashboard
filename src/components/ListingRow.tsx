@@ -52,17 +52,19 @@ export function ListingRow({ listing, selected, onSelect }: Props) {
           ₪{listing.price ?? '—'} · {listing.rooms ?? '—'} rm
         </p>
       </div>
-      <div className="flex flex-col items-end gap-1 shrink-0">
-        {isNewListing(listing.extracted_at) && (
-          <span className="text-[10px] font-mono uppercase tracking-wide bg-sage text-paper-raised rounded-full px-2 py-0.5">
-            New
-          </span>
-        )}
-        {listing.listing_type === 'sublet' && (
-          <span className="text-[10px] font-mono uppercase tracking-wide bg-rust text-paper-raised rounded-full px-2 py-0.5">
-            Sublet
-          </span>
-        )}
+      <div className="flex flex-col items-end justify-between gap-1 shrink-0 self-stretch">
+        <div className="flex flex-col items-end gap-1">
+          {isNewListing(listing.extracted_at) && (
+            <span className="text-[10px] font-mono uppercase tracking-wide bg-sage text-paper-raised rounded-full px-2 py-0.5">
+              New
+            </span>
+          )}
+          {listing.listing_type === 'sublet' && (
+            <span className="text-[10px] font-mono uppercase tracking-wide bg-rust text-paper-raised rounded-full px-2 py-0.5">
+              Sublet
+            </span>
+          )}
+        </div>
         {url && (
           <a
             href={url}
@@ -71,7 +73,7 @@ export function ListingRow({ listing, selected, onSelect }: Props) {
             onClick={(e) => e.stopPropagation()}
             aria-label="View original ad"
             title="View original ad"
-            className={`font-mono text-[11px] ${selected ? 'text-paper/70 hover:text-paper' : 'text-rust hover:text-rust-dark'}`}
+            className={`font-mono text-sm font-medium ${selected ? 'text-paper/70 hover:text-paper' : 'text-rust hover:text-rust-dark'}`}
           >
             view ↗
           </a>
