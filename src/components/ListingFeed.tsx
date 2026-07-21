@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
-import type { Listing } from '../types/listing';
+import type { Listing, ListingStatus, Source } from '../types/listing';
 import { ListingCard } from './ListingCard';
 import { ListingRow } from './ListingRow';
+
+const SOURCES: Source[] = ['yad2', 'facebook', 'whatsapp', 'manual'];
+const STATUSES: ListingStatus[] = ['new', 'contacted', 'seen'];
 
 // Matches the `xl:` breakpoint the layout grid below switches on — desktop keeps
 // the side-by-side sticky panel, everything narrower gets an inline-expanding row.
@@ -25,6 +28,8 @@ export function ListingFeed() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [showDelisted, setShowDelisted] = useState(false);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<Source | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<ListingStatus | 'all'>('all');
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const isDesktop = useIsDesktop();
@@ -46,8 +51,14 @@ export function ListingFeed() {
   }
 
   const visibleListings = useMemo(
-    () => (favoritesOnly ? listings.filter((l) => l.favorited) : listings),
-    [listings, favoritesOnly]
+    () =>
+      listings.filter(
+        (l) =>
+          (!favoritesOnly || l.favorited) &&
+          (sourceFilter === 'all' || l.source === sourceFilter) &&
+          (statusFilter === 'all' || l.status === statusFilter)
+      ),
+    [listings, favoritesOnly, sourceFilter, statusFilter]
   );
   const selected = listings.find((l) => l.id === selectedId) ?? null;
 
@@ -91,6 +102,30 @@ export function ListingFeed() {
           {!loading && <span className="font-mono text-sm text-ink-soft ml-2">({visibleListings.length})</span>}
         </h2>
         <div className="flex items-center gap-4">
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value as Source | 'all')}
+            className="border border-rule rounded-sm px-2 py-1 text-xs font-mono uppercase bg-paper"
+          >
+            <option value="all">All sources</option>
+            {SOURCES.map((source) => (
+              <option key={source} value={source}>
+                {source}
+              </option>
+            ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as ListingStatus | 'all')}
+            className="border border-rule rounded-sm px-2 py-1 text-xs font-mono uppercase bg-paper"
+          >
+            <option value="all">All statuses</option>
+            {STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
           <label className="flex items-center gap-2 text-xs font-mono uppercase tracking-wide text-ink-soft cursor-pointer">
             <input
               type="checkbox"
@@ -119,7 +154,9 @@ export function ListingFeed() {
       )}
       {!loading && listings.length > 0 && visibleListings.length === 0 && (
         <p className="text-sm text-ink-soft italic border border-dashed border-rule rounded-sm p-6 text-center">
-          No favorites yet — star a listing to see it here.
+          {favoritesOnly && sourceFilter === 'all' && statusFilter === 'all'
+            ? 'No favorites yet — star a listing to see it here.'
+            : 'No listings match these filters.'}
         </p>
       )}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
